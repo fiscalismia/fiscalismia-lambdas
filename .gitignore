@@ -205,3 +205,13 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Project dependencies
+build
+.env
+npm-debug.log
+node_modules/
+payload.zip
+nodejs*_layer.zip
+python*_layer.zip
+response.json
