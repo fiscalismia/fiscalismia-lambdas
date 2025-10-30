@@ -18,7 +18,7 @@ const bucketObject = {
 //                   __   __
 //  |     /\   |\/| |__) |  \  /\
 //  |___ /~~\  |  | |__) |__/ /~~\
-exports.handler = async (event) => {
+exports.lambda_handler = async (event) => {
 
   // ####### Debugging
   // checkDependencies()

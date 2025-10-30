@@ -63,7 +63,7 @@ def get_debug_info(event, decodedBody, headers):
 def logTimePassed(start_time, log_msg):
   print(f"{round((time.time_ns() - start_time) / 1000000)}ms time passed after [{log_msg}]")
 
-def handler(event, context):
+def lambda_handler(event, context):
   start_time = time.time_ns()
   body = event["body"]
   headers = event["headers"]
