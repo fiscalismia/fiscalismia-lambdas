@@ -26,7 +26,6 @@ exports.lambda_handler = async (event) => {
   // await getSingleObject(bucketObject)
   // await getSingleObjectWithSharp(bucketObject)
 
-
   try {
     // Check if the request body exists
     if (!event.body) {
