@@ -12,8 +12,8 @@ DOCKER_IMG="public.ecr.aws/lambda/python:3.13.2025.10.29.20-x86_64"
 LAYER_NAME="Fiscalismia_RawDataETL_PythonDependencies"
 PROGRAMMING_LANG="python"
 PYTHON_V="python3.13"
-ENGINE="docker" # or podman
-bash create_layer_archive.sh $RUNTIME_ENV $DOCKER_IMG $LAYER_NAME $PROGRAMMING_LANG $PYTHON_V
+ENGINE="podman" # podman or docker
+bash create_layer_archive.sh $RUNTIME_ENV $DOCKER_IMG $LAYER_NAME $PROGRAMMING_LANG $PYTHON_V $ENGINE
 ```
 
 **TypeScript**
@@ -25,8 +25,8 @@ DOCKER_IMG="public.ecr.aws/lambda/nodejs:24-preview.2025.10.29.20-x86_64"
 LAYER_NAME="Fiscalismia_ImageProcessing_NodeJSDependencies"
 PROGRAMMING_LANG="typescript"
 NODE_V="node24"
-ENGINE="docker" # or podman
-bash create_layer_archive.sh $RUNTIME_ENV $DOCKER_IMG $LAYER_NAME $PROGRAMMING_LANG $NODE_V
+ENGINE="podman" # podman or docker
+bash create_layer_archive.sh $RUNTIME_ENV $DOCKER_IMG $LAYER_NAME $PROGRAMMING_LANG $NODE_V $ENGINE
 ```
 
 ### Test the lambda functions locally in Podman

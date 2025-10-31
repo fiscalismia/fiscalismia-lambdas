@@ -9,8 +9,13 @@ set -euo pipefail
 #                      __       ___    __
 #    \  /  /\  |    | |  \  /\   |  | /  \ |\ |
 #     \/  /~~\ |___ | |__/ /~~\  |  | \__/ | \|
-RED='\033[0;31m' # ANSI Escape code
-NC='\033[0m' # No Color
+RED='\033[0;31m'        # ANSI 4-bit Escape code
+GREEN='\033[0;32m'      # ANSI 4-bit Escape code
+YELLOW='\033[0;33m'     # ANSI 4-bit Escape code
+BLUE='\033[0;34m'       # ANSI 4-bit Escape code
+GREEN_BOLD='\033[1;32m' # ANSI 4-bit Escape code
+BLUE_BOLD='\033[1;34m'  # ANSI 4-bit Escape code
+NC='\033[0m'            # No Color
 CURRENT_DIR=$(pwd | sed 's:.*/::')
 if [ "$CURRENT_DIR" != "scripts" ]
 then
@@ -41,8 +46,8 @@ fi
 #    |    \__/ |__/  |  | /~~\ | \|    \__/ |  \    |__/ \__/ \__, |  \ |___ |  \
 if [[ "$6" == "podman" ]] || [[ "$6" == "docker" ]]; then
   if [[ "$6" == "docker" ]]; then
-    function podman() 
-    { 
+    function podman()
+    {
       docker "$@"
     }
   fi
@@ -65,9 +70,10 @@ RUNTIME_ENV=$1
 DOCKER_IMG=$2
 LAYER_NAME=$3
 PROGRAMMING_LANG=$4 # supports python and nodejs
+PARENT_DIR="$(dirname $(pwd))"
+ZIP_DIR="${PARENT_DIR}/layers/${LAYER_NAME}"
 ZIP_NAME="${LAYER_NAME}.zip"
-ZIP_DIR="../layers/${LAYER_NAME}"
-
+ZIP_FILE="${ZIP_DIR}/${ZIP_NAME}"
 #            __  ___                              __     __    __      __   ___  __   ___       __   ___       __     ___  __
 #    | |\ | /__`  |   /\  |    |        /\  |\ | |  \     / | |__)    |  \ |__  |__) |__  |\ | |  \ |__  |\ | /  ` | |__  /__`
 #    | | \| .__/  |  /~~\ |___ |___    /~~\ | \| |__/    /_ | |       |__/ |___ |    |___ | \| |__/ |___ | \| \__, | |___ .__/
@@ -77,29 +83,36 @@ podman pull $DOCKER_IMG
 if [ "${PROGRAMMING_LANG}" == "python" ]; then
   PYTHON_V=$5 # e.g. python3.13
   IMG_VENV_FOLDER="/var/temp/virtualenv"
-  LAYER_DIR="../layers/${LAYER_NAME}/python/lib/$PYTHON_V/site-packages"
+  LAYER_DIR="${PARENT_DIR}/layers/${LAYER_NAME}/python/lib/${PYTHON_V}/site-packages"
   # install and persist depdencies locally
   mkdir -p $LAYER_DIR
-  podman run --rm --entrypoint /bin/bash -v $LAYER_DIR:/var/task:z $DOCKER_IMG -c "
-  mkdir -p $IMG_VENV_FOLDER
-  python -m venv $IMG_VENV_FOLDER
-  source $IMG_VENV_FOLDER/bin/activate
+  podman run --rm --entrypoint /bin/bash -v ${ZIP_DIR}:/var/task:z ${DOCKER_IMG} -c "
+  set -euo pipefail
+  mkdir -p ${IMG_VENV_FOLDER}
+  python -m venv ${IMG_VENV_FOLDER}
+  source ${IMG_VENV_FOLDER}/bin/activate
   cd /var/task
+  ls -hla
+  pwd
 
-  echo '################## DEPENDENCY INSTALLATION BEGIN ###############'
-  pip install requests -t .
-  pip install openpyxl -t .
-  echo '################## DEPENDENCY INSTALLATION END #################'
+  echo -e '${BLUE_BOLD}################## DEPENDENCY INSTALLATION BEGIN ###############${NC}'
+  pip install -r ./requirements.txt -t ${LAYER_DIR}
+  echo -e '${BLUE_BOLD}################## INSTALLED THE FOLLOWING PACKAGES ############${NC}'
+  pip list --path ${LAYER_DIR}
   "
 
   # create zip archive
-  cd $ZIP_DIR
-  zip -r -q $ZIP_NAME python/
-  echo "" && echo ">>>>>>>>>>>>>>>> Zipped installed dependencies to [$ZIP_NAME] <<<<<<<<<<<<<<<<<<<" && echo ""
+  cd ${ZIP_DIR}
+  rm -f ${ZIP_FILE}
+  zip -r -q ${ZIP_NAME} python/
+  echo -e "${GREEN_BOLD}==> Zipped installed dependencies to [${ZIP_NAME}]${NC}"
 
   # remove locally cached dependencies after zipping
-  podman run --rm --entrypoint /bin/bash -v $ZIP_DIR:/var/task:z $DOCKER_IMG -c "
+  podman run --rm --entrypoint /bin/bash -v ${ZIP_DIR}:/var/task:z ${DOCKER_IMG} -c "
+  set -euo pipefail
+  echo -e '${YELLOW}Removing python virtual environment: ${IMG_VENV_FOLDER}${NC}'
   rm -rf $IMG_VENV_FOLDER
+  echo -e '${YELLOW}Removing locally installed python dependencies: /var/task/python${NC}'
   rm -rf /var/task/python
   "
 ##### NODEJS LAYER #####
@@ -109,19 +122,22 @@ elif [ "${PROGRAMMING_LANG}" == "typescript" ]; then
   LAYER_DIR="../layers/${LAYER_NAME}/nodejs/$NODE_V/"
   mkdir -p $LAYER_DIR
   podman run --rm --entrypoint /bin/bash -v $LAYER_DIR:/var/task:z $DOCKER_IMG -c "
-  ################## DEPENDENCY INSTALLATION BEGIN ###############
+  set -euo pipefail
+  echo -e '${BLUE_BOLD}################## DEPENDENCY INSTALLATION BEGIN ###############${NC}'
   npm i sharp@0.33.5
-  ################## DEPENDENCY INSTALLATION END #################
+  echo -e '${BLUE_BOLD}################## DEPENDENCY INSTALLATION END #################${NC}'
   "
 
   # create zip archive
   cd $ZIP_DIR
   zip -r -q $ZIP_NAME nodejs
-  echo "" && echo ">>>>>>>>>>>>>>>> Zipped installed dependencies to <<<<<<<<<<<<<<<<<<<"
+  echo -e "${GREEN_BOLD}==> Zipped installed dependencies to [${ZIP_NAME}]${NC}"
   echo "[$(pwd)/$ZIP_NAME] "
 
   # remove locally cached dependencies after zipping
   podman run --rm --entrypoint /bin/bash -v $ZIP_DIR:/var/task:z $DOCKER_IMG -c "
+  set -euo pipefail
+  echo -e '${YELLOW}Removing locally installed nodejs depdencies: /var/task/nodejs/${NC}'
   rm -rf nodejs/
   "
 fi
