@@ -1,0 +1,135 @@
+name: Fiscalismia-Lambda Deployment Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - pipeline_testing
+  pull_request:
+    branches:
+      - main
+      - pipeline_testing+
+
+jobs:
+  zip-nodejs-layer:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      actions: read
+
+    steps:
+    - name: Checkout SCM
+      uses: actions/checkout@v5
+
+    - name: Build NodeJS Layer Fiscalismia_ImageProcessing_NodeJSDependencies
+      env:
+        RUNTIME_ENV: "nodejs24.x"
+        DOCKER_IMG: "public.ecr.aws/lambda/nodejs:24-preview.2025.10.29.20-x86_64"
+        LAYER_NAME: "Fiscalismia_ImageProcessing_NodeJSDependencies"
+        PROGRAMMING_LANG: "typescript"
+        NODE_V: "node24"
+        ENGINE: "docker"
+      run: |
+        cd scripts
+        bash create_layer_archive.sh ${RUNTIME_ENV} ${DOCKER_IMG} ${LAYER_NAME} ${PROGRAMMING_LANG} ${NODE_V} ${ENGINE}
+        cd ../layers/${LAYER_NAME}
+        ls -hla
+
+    - name: Upload Layer Archive Artifacts
+      uses: actions/upload-artifact@v5.0.0
+      with:
+        name: nodejs-layer-archive
+        retention-days: 1
+        path: |
+          layers/*NodeJS*/*
+          !layers/*NodeJS*/package.json
+
+  zip-python-layer:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      actions: read
+
+    steps:
+    - name: Checkout SCM
+      uses: actions/checkout@v5
+
+    - name: Build Python Layer Fiscalismia_RawDataETL_PythonDependencies
+      env:
+        RUNTIME_ENV: "python3.13"
+        DOCKER_IMG: "public.ecr.aws/lambda/python:3.13.2025.10.29.20-x86_64"
+        LAYER_NAME: "Fiscalismia_RawDataETL_PythonDependencies"
+        PROGRAMMING_LANG: "python"
+        PYTHON_V: "python3.13"
+        ENGINE: "docker"
+      run: |
+        cd scripts
+        bash create_layer_archive.sh ${RUNTIME_ENV} ${DOCKER_IMG} ${LAYER_NAME} ${PROGRAMMING_LANG} ${PYTHON_V} ${ENGINE}
+        cd ../layers/${LAYER_NAME}
+        ls -hla
+
+    - name: Upload Layer Archive Artifacts
+      uses: actions/upload-artifact@v5.0.0
+      with:
+        name: python-layer-archive
+        retention-days: 1
+        path: |
+          layers/*Python*/*
+          !layers/*Python*/requirements.txt
+
+  upload-layers:
+    runs-on: ubuntu-latest
+    needs:
+      - zip-nodejs-layer
+      - zip-python-layer
+
+    permissions:
+      contents: read
+      actions: read
+
+    steps:
+    - name: Configure AWS Credentials
+      # This action takes your secrets and correctly sets up the AWS CLI environment
+      uses: aws-actions/configure-aws-credentials@v5.1.0
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }} # Use the region secret
+
+    - name: Download NodeJS Layer Archive
+      uses: actions/download-artifact@v4
+      with:
+        name: nodejs-layer-archive
+        path: layers/
+
+    - name: Download Python Layer Archive
+      uses: actions/download-artifact@v4
+      with:
+        name: python-layer-archive
+        path: layers/
+
+    - name: Upload Layer Archives to S3 bucket
+      env:
+        S3_BUCKET: fiscalismia-infrastructure
+        NODEJS_LAYER_PREFIX: lambdas/fiscalismia/nodejs
+        PYTHON_LAYER_PREFIX: lambdas/fiscalismia/python
+        NODEJS_LAYER_NAME: Fiscalismia_ImageProcessing_NodeJSDependencies
+        PYTHON_LAYER_NAME: Fiscalismia_RawDataETL_PythonDependencies
+      run: |
+        aws sts get-caller-identity
+        aws s3 ls
+
+        export S3_UPLOAD_URI_NODEJS="s3://${S3_BUCKET}/${NODEJS_LAYER_PREFIX}/${NODEJS_LAYER_NAME}.zip"
+        cd layers/${NODEJS_LAYER_NAME}/
+        echo "Uploading to ${S3_UPLOAD_URI_NODEJS}"
+        ls -hla
+        aws s3 cp ./${NODEJS_LAYER_NAME}.zip ${S3_UPLOAD_URI_NODEJS}
+        cd ../../
+
+        export S3_UPLOAD_URI_NODEJS="s3://${S3_BUCKET}/${PYTHON_LAYER_PREFIX}/${PYTHON_LAYER_NAME}.zip"
+        cd layers/${PYTHON_LAYER_NAME}/
+        echo "Uploading to ${S3_UPLOAD_URI_NODEJS}"
+        ls -hla
+        aws s3 cp ./${PYTHON_LAYER_NAME}.zip ${S3_UPLOAD_URI_NODEJS}
