@@ -211,7 +211,7 @@ build
 .env
 npm-debug.log
 node_modules/
-payload.zip
-nodejs*_layer.zip
-python*_layer.zip
+*.zip
+python/lib/**
+**/site-packages */
 response.json

@@ -9,8 +9,16 @@ set -euo pipefail
 #                      __       ___    __
 #    \  /  /\  |    | |  \  /\   |  | /  \ |\ |
 #     \/  /~~\ |___ | |__/ /~~\  |  | \__/ | \|
-if [ $# -ne 5 ]; then
-  echo -e "${RED}ERROR:${NC} Exactly 5 parameters expected."
+RED='\033[0;31m' # ANSI Escape code
+NC='\033[0m' # No Color
+CURRENT_DIR=$(pwd | sed 's:.*/::')
+if [ "$CURRENT_DIR" != "scripts" ]
+then
+  echo "please change directory to scripts folder and execute the shell script again."
+  exit 1
+fi
+if [ $# -ne 6 ]; then
+  echo -e "${RED}ERROR:${NC} Exactly 6 parameters expected."
   echo "Received Parameter count: $#"
   exit 1
 fi
@@ -27,6 +35,22 @@ if [[ -z "$zip_binary_dir" ]]; then
   echo -e "${RED}ERROR:${NC} Please Install the zip package on your local machine"
   exit 1
 fi
+
+#     __   __   __                      __   __      __   __   __        ___  __
+#    |__) /  \ |  \  |\/|  /\  |\ |    /  \ |__)    |  \ /  \ /  ` |__/ |__  |__)
+#    |    \__/ |__/  |  | /~~\ | \|    \__/ |  \    |__/ \__/ \__, |  \ |___ |  \
+if [[ "$6" == "podman" ]] || [[ "$6" == "docker" ]]; then
+  if [[ "$6" == "docker" ]]; then
+    function podman() 
+    { 
+      docker "$@"
+    }
+  fi
+else
+  # -e flag to respect escapes
+  echo -e "${RED}ERROR:${NC} Param #6 should be either 'podman' or 'docker'"
+  exit 1
+fi
 podman_dir=$(which podman)
 if [[ -z "$podman_dir" ]]; then
   # -e flag to respect escapes
@@ -37,8 +61,6 @@ fi
 #               __          __        ___  __
 #    \  /  /\  |__) |  /\  |__) |    |__  /__`
 #     \/  /~~\ |  \ | /~~\ |__) |___ |___ .__/
-RED='\033[0;31m' # ANSI Escape code
-NC='\033[0m' # No Color
 RUNTIME_ENV=$1
 DOCKER_IMG=$2
 LAYER_NAME=$3
