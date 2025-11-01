@@ -211,7 +211,7 @@ jobs:
     #     name: typescript-layer-archive
     #     path: functions/typescript/
 
-    - name: Upload Layer Archives to S3 bucket
+    - name: Upload Function Archives to S3 bucket
       env:
         S3_BUCKET: fiscalismia-infrastructure
         NODEJS_APP_LAYER_PREFIX: lambdas/fiscalismia/nodejs
@@ -223,8 +223,8 @@ jobs:
 
         export S3_UPLOAD_URI="s3://${S3_BUCKET}/${PYTHON_INFRA_LAYER_PREFIX}/"
         cd ${GITHUB_WORKSPACE}/functions/python/
-        echo "Syncing the following files to ${S3_UPLOAD_URI}"
-        ls -hla
+        echo && echo "##### Syncing the following files to ${S3_UPLOAD_URI}"
+        ls -hla | grep -E Test|Infra
         aws s3 sync . ${S3_UPLOAD_URI} \
           --exclude "*" \
           --include "Infra*.zip" \
@@ -232,8 +232,8 @@ jobs:
 
         export S3_UPLOAD_URI="s3://${S3_BUCKET}/${PYTHON_APP_LAYER_PREFIX}/"
         cd ${GITHUB_WORKSPACE}/functions/python/
-        echo "Syncing the following files to ${S3_UPLOAD_URI}"
-        ls -hla
+        echo && echo "##### Syncing the following files to ${S3_UPLOAD_URI}"
+        ls -hla | grep Fiscalismia
         aws s3 sync . ${S3_UPLOAD_URI} \
           --exclude "*" \
           --include "Fiscalismia*.zip"
