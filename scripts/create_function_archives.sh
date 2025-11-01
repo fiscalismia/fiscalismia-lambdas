@@ -49,7 +49,13 @@ cd ${FUNCTION_DIR}
 
 ##### PYTHON FUNCTIONS #####
 if [ "${PROGRAMMING_LANG}" == "python" ]; then
-  ls -hla
+  for folder in */; do
+    cd ${FUNCTION_DIR}/${folder}
+    folder_name=$(echo "${folder}" | sed 's/\/$//')
+    zip_name="${folder_name}.zip"
+    zip ${zip_name} index.py
+    mv ${zip_name} ${FUNCTION_DIR}/
+  done
 ##### TYPERSCRIPT FUNCTIONS #####
 elif [ "${PROGRAMMING_LANG}" == "typescript" ]; then
   ls -hla
