@@ -69,7 +69,7 @@ fi
 RUNTIME_ENV=$1
 DOCKER_IMG=$2
 LAYER_NAME=$3
-PROGRAMMING_LANG=$4 # supports python and nodejs
+PROGRAMMING_LANG=$4 # supports python and typescript
 PARENT_DIR="$(dirname $(pwd))"
 ZIP_DIR="${PARENT_DIR}/layers/${LAYER_NAME}"
 ZIP_NAME="${LAYER_NAME}.zip"
