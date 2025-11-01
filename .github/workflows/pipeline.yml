@@ -182,7 +182,6 @@ jobs:
         retention-days: 1
         path: |
           functions/python/*.zip
-          !functions/python/**/*
 
   upload-functions:
     runs-on: ubuntu-latest
