@@ -224,7 +224,7 @@ jobs:
         export S3_UPLOAD_URI="s3://${S3_BUCKET}/${PYTHON_INFRA_LAYER_PREFIX}/"
         cd ${GITHUB_WORKSPACE}/functions/python/
         echo && echo "##### Syncing the following files to ${S3_UPLOAD_URI}"
-        ls -hla | grep -E Test|Infra
+        ls -hla | grep -E 'Test|Infra'
         aws s3 sync . ${S3_UPLOAD_URI} \
           --exclude "*" \
           --include "Infra*.zip" \
