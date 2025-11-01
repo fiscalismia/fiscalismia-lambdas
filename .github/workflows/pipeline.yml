@@ -172,8 +172,6 @@ jobs:
       run: |
         cd ${GITHUB_WORKSPACE}/scripts
         bash create_function_archives.sh ${PROGRAMMING_LANG}
-        cd ${GITHUB_WORKSPACE}/functions/python/
-        ls -hla
 
     - name: Upload Python Lambda Function Archives
       uses: actions/upload-artifact@v5.0.0
