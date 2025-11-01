@@ -127,8 +127,9 @@ jobs:
     - name: Upload Layer Archives to S3 bucket
       env:
         S3_BUCKET: fiscalismia-infrastructure
-        NODEJS_LAYER_PREFIX: lambdas/fiscalismia/nodejs
-        PYTHON_LAYER_PREFIX: lambdas/fiscalismia/python
+        NODEJS_APP_LAYER_PREFIX: lambdas/fiscalismia/nodejs
+        PYTHON_APP_LAYER_PREFIX: lambdas/fiscalismia/python
+        PYTHON_INFRA_LAYER_PREFIX: lambdas/infrastructure/python
         NODEJS_APP_LAYER_NAME: Fiscalismia_ImageProcessing_NodeJSDependencies
         PYTHON_APP_LAYER_NAME: Fiscalismia_RawDataETL_PythonDependencies
         PYTHON_INFRA_LAYER_NAME: Infrastructure_PythonDependencies
@@ -136,19 +137,19 @@ jobs:
         aws sts get-caller-identity
         aws s3 ls
 
-        export S3_UPLOAD_URI_NODEJS="s3://${S3_BUCKET}/${NODEJS_LAYER_PREFIX}/${NODEJS_APP_LAYER_NAME}.zip"
+        export S3_UPLOAD_URI_NODEJS="s3://${S3_BUCKET}/${NODEJS_APP_LAYER_PREFIX}/${NODEJS_APP_LAYER_NAME}.zip"
         cd ${GITHUB_WORKSPACE}/layers/${NODEJS_APP_LAYER_NAME}/
         echo "Uploading to ${S3_UPLOAD_URI_NODEJS}"
         ls -hla
         aws s3 cp ./${NODEJS_APP_LAYER_NAME}.zip ${S3_UPLOAD_URI_NODEJS}
 
-        export S3_UPLOAD_URI_NODEJS="s3://${S3_BUCKET}/${PYTHON_LAYER_PREFIX}/${PYTHON_APP_LAYER_NAME}.zip"
+        export S3_UPLOAD_URI_NODEJS="s3://${S3_BUCKET}/${PYTHON_APP_LAYER_PREFIX}/${PYTHON_APP_LAYER_NAME}.zip"
         cd ${GITHUB_WORKSPACE}/layers/${PYTHON_APP_LAYER_NAME}/
         echo "Uploading to ${S3_UPLOAD_URI_NODEJS}"
         ls -hla
         aws s3 cp ./${PYTHON_APP_LAYER_NAME}.zip ${S3_UPLOAD_URI_NODEJS}
 
-        export S3_UPLOAD_URI_NODEJS="s3://${S3_BUCKET}/${PYTHON_LAYER_PREFIX}/${PYTHON_INFRA_LAYER_NAME}.zip"
+        export S3_UPLOAD_URI_NODEJS="s3://${S3_BUCKET}/${PYTHON_INFRA_LAYER_PREFIX}/${PYTHON_INFRA_LAYER_NAME}.zip"
         cd ${GITHUB_WORKSPACE}/layers/${PYTHON_INFRA_LAYER_NAME}/
         echo "Uploading to ${S3_UPLOAD_URI_NODEJS}"
         ls -hla
