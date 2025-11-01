@@ -31,9 +31,9 @@ jobs:
         NODE_V: "node24"
         ENGINE: "docker"
       run: |
-        cd scripts
+        cd ${GITHUB_WORKSPACE}/scripts
         bash create_layer_archive.sh ${RUNTIME_ENV} ${DOCKER_IMG} ${LAYER_NAME} ${PROGRAMMING_LANG} ${NODE_V} ${ENGINE}
-        cd ../layers/${LAYER_NAME}
+        cd ${GITHUB_WORKSPACE}/layers/${LAYER_NAME}
         ls -hla
 
     - name: Upload Layer Archive Artifacts
@@ -65,9 +65,9 @@ jobs:
         PYTHON_V: "python3.13"
         ENGINE: "docker"
       run: |
-        cd scripts
+        cd ${GITHUB_WORKSPACE}/scripts
         bash create_layer_archive.sh ${RUNTIME_ENV} ${DOCKER_IMG} ${LAYER_NAME} ${PROGRAMMING_LANG} ${PYTHON_V} ${ENGINE}
-        cd ../layers/${LAYER_NAME}
+        cd ${GITHUB_WORKSPACE}/layers/${LAYER_NAME}
         ls -hla
 
     - name: Build Python Layer Infrastructure_PythonDependencies
@@ -79,9 +79,9 @@ jobs:
         PYTHON_V: "python3.13"
         ENGINE: "docker"
       run: |
-        cd scripts
+        cd ${GITHUB_WORKSPACE}/scripts
         bash create_layer_archive.sh ${RUNTIME_ENV} ${DOCKER_IMG} ${LAYER_NAME} ${PROGRAMMING_LANG} ${PYTHON_V} ${ENGINE}
-        cd ../layers/${LAYER_NAME}
+        cd ${GITHUB_WORKSPACE}/layers/${LAYER_NAME}
         ls -hla
 
     - name: Upload Layer Archive Artifacts
@@ -137,20 +137,19 @@ jobs:
         aws s3 ls
 
         export S3_UPLOAD_URI_NODEJS="s3://${S3_BUCKET}/${NODEJS_LAYER_PREFIX}/${NODEJS_APP_LAYER_NAME}.zip"
-        cd layers/${NODEJS_APP_LAYER_NAME}/
+        cd ${GITHUB_WORKSPACE}/layers/${NODEJS_APP_LAYER_NAME}/
         echo "Uploading to ${S3_UPLOAD_URI_NODEJS}"
         ls -hla
         aws s3 cp ./${NODEJS_APP_LAYER_NAME}.zip ${S3_UPLOAD_URI_NODEJS}
-        cd ../../
 
         export S3_UPLOAD_URI_NODEJS="s3://${S3_BUCKET}/${PYTHON_LAYER_PREFIX}/${PYTHON_APP_LAYER_NAME}.zip"
-        cd layers/${PYTHON_APP_LAYER_NAME}/
+        cd ${GITHUB_WORKSPACE}/layers/${PYTHON_APP_LAYER_NAME}/
         echo "Uploading to ${S3_UPLOAD_URI_NODEJS}"
         ls -hla
         aws s3 cp ./${PYTHON_APP_LAYER_NAME}.zip ${S3_UPLOAD_URI_NODEJS}
 
         export S3_UPLOAD_URI_NODEJS="s3://${S3_BUCKET}/${PYTHON_LAYER_PREFIX}/${PYTHON_INFRA_LAYER_NAME}.zip"
-        cd layers/${PYTHON_INFRA_LAYER_NAME}/
+        cd ${GITHUB_WORKSPACE}/layers/${PYTHON_INFRA_LAYER_NAME}/
         echo "Uploading to ${S3_UPLOAD_URI_NODEJS}"
         ls -hla
         aws s3 cp ./${PYTHON_INFRA_LAYER_NAME}.zip ${S3_UPLOAD_URI_NODEJS}
@@ -170,9 +169,9 @@ jobs:
       env:
         PROGRAMMING_LANG: "python" # or typescript
       run: |
-        cd scripts
+        cd ${GITHUB_WORKSPACE}/scripts
         bash create_function_archives.sh ${PROGRAMMING_LANG}
-        cd ../functions/python/
+        cd ${GITHUB_WORKSPACE}/functions/python/
         ls -hla
 
     - name: Upload Python Lambda Function Archives
