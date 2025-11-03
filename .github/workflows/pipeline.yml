@@ -24,11 +24,12 @@ jobs:
 
     - name: Build NodeJS Layer Fiscalismia_ImageProcessing_NodeJSDependencies
       env:
-        RUNTIME_ENV: "nodejs24.x"
-        DOCKER_IMG: "public.ecr.aws/lambda/nodejs:24-preview.2025.10.29.20-x86_64"
+        RUNTIME_ENV: "nodejs22.x"
+        DOCKER_IMG: "public.ecr.aws/lambda/nodejs:22.2025.10.29.20"
+        # DOCKER_IMG: "public.ecr.aws/lambda/nodejs:24-preview.2025.10.29.20-x86_64"
         LAYER_NAME: "Fiscalismia_ImageProcessing_NodeJSDependencies"
         PROGRAMMING_LANG: "typescript"
-        NODE_V: "node24"
+        NODE_V: "node22"
         ENGINE: "docker"
       run: |
         cd ${GITHUB_WORKSPACE}/scripts
@@ -166,7 +167,14 @@ jobs:
 
     - name: Zip Python Lambda Functions
       env:
-        PROGRAMMING_LANG: "python" # or typescript
+        PROGRAMMING_LANG: "python"
+      run: |
+        cd ${GITHUB_WORKSPACE}/scripts
+        bash create_function_archives.sh ${PROGRAMMING_LANG}
+
+    - name: Build and Zip TypeScript Lambda Functions
+      env:
+        PROGRAMMING_LANG: "typescript"
       run: |
         cd ${GITHUB_WORKSPACE}/scripts
         bash create_function_archives.sh ${PROGRAMMING_LANG}
@@ -178,6 +186,14 @@ jobs:
         retention-days: 1
         path: |
           functions/python/*.zip
+
+    - name: Upload TypeScript Lambda Function Archives
+      uses: actions/upload-artifact@v5.0.0
+      with:
+        name: typescript-function-archives
+        retention-days: 1
+        path: |
+          functions/typescript/*.zip
 
   upload-functions:
     runs-on: ubuntu-latest
@@ -204,22 +220,22 @@ jobs:
         name: python-function-archives
         path: functions/python/
 
-    # - name: Download TypeScript Function Archives
-    #   uses: actions/download-artifact@v4
-    #   with:
-    #     name: typescript-layer-archive
-    #     path: functions/typescript/
+    - name: Download TypeScript Function Archives
+      uses: actions/download-artifact@v4
+      with:
+        name: typescript-function-archives
+        path: functions/typescript/
 
     - name: Upload Function Archives to S3 bucket
       env:
         S3_BUCKET: fiscalismia-infrastructure
-        NODEJS_APP_LAYER_PREFIX: lambdas/fiscalismia/nodejs
-        PYTHON_APP_LAYER_PREFIX: lambdas/fiscalismia/python
-        PYTHON_INFRA_LAYER_PREFIX: lambdas/infrastructure/python
+        NODEJS_APP_PREFIX: lambdas/fiscalismia/nodejs
+        PYTHON_APP_PREFIX: lambdas/fiscalismia/python
+        PYTHON_INFRA_PREFIX: lambdas/infrastructure/python
       run: |
         aws sts get-caller-identity
 
-        export S3_UPLOAD_URI="s3://${S3_BUCKET}/${PYTHON_INFRA_LAYER_PREFIX}/"
+        export S3_UPLOAD_URI="s3://${S3_BUCKET}/${PYTHON_INFRA_PREFIX}/"
         cd ${GITHUB_WORKSPACE}/functions/python/
         echo && echo "##### Syncing the following files to ${S3_UPLOAD_URI}"
         ls -hla | grep -E 'Test|Infra'
@@ -228,8 +244,16 @@ jobs:
           --include "Infra*.zip" \
           --include "Test*.zip"
 
-        export S3_UPLOAD_URI="s3://${S3_BUCKET}/${PYTHON_APP_LAYER_PREFIX}/"
+        export S3_UPLOAD_URI="s3://${S3_BUCKET}/${PYTHON_APP_PREFIX}/"
         cd ${GITHUB_WORKSPACE}/functions/python/
+        echo && echo "##### Syncing the following files to ${S3_UPLOAD_URI}"
+        ls -hla | grep Fiscalismia
+        aws s3 sync . ${S3_UPLOAD_URI} \
+          --exclude "*" \
+          --include "Fiscalismia*.zip"
+
+        export S3_UPLOAD_URI="s3://${S3_BUCKET}/${NODEJS_APP_PREFIX}/"
+        cd ${GITHUB_WORKSPACE}/functions/typescript/
         echo && echo "##### Syncing the following files to ${S3_UPLOAD_URI}"
         ls -hla | grep Fiscalismia
         aws s3 sync . ${S3_UPLOAD_URI} \

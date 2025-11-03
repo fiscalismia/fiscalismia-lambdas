@@ -1,0 +1,14 @@
+{
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.157",
+    "@types/node": "^24.10.0",
+    "@types/sharp": "^0.31.1",
+    "esbuild": "^0.25.12",
+    "sharp": "^0.34.4"
+  },
+  "scripts": {
+    "prebuild": "rm -rf dist",
+    "build": "esbuild index.ts --bundle --minify --platform=node --target=node22 --outfile=dist/index.js --packages=external",
+    "postbuild": "cd dist && zip -r index.zip index.js*"
+  }
+}

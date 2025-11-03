@@ -35,6 +35,46 @@ bash create_layer_archive.sh ${RUNTIME_ENV} ${DOCKER_IMG} ${LAYER_NAME} ${PROGRA
 podman run --rm --entrypoint /bin/bash -it public.ecr.aws/lambda/nodejs:24-preview.2025.10.29.20-x86_64
 ```
 
+### Create Lambda Functions for either Python or TypeScript
+
+```bash
+cd ~/git/fiscalismia-lambdas/scripts
+sudo chmod u+x create_function_archives.sh
+PROGRAMMING_LANG="typescript"
+bash create_create_function_archives.sh ${PROGRAMMING_LANG}
+
+```
+
+### Local TypeScript Lambda Development
+
+```bash
+cd ~/git/fiscalismia-lambdas/functions/typescript/Fiscalismia_ImageProcessing
+# function dependencies
+npm install --save-dev @types/aws-lambda
+npm install --save-dev @types/node
+npm install --save-dev @types/sharp
+# build dependencies
+npm install --save-dev esbuild
+
+# build without including aws-sdk/client-s3 in node_modules
+# build without including sharp since it is packaged as a layer
+npx esbuild index.ts --bundle \
+  --minify \
+  --platform=node \
+  --target=node22 \
+  --outfile=dist/index.js \
+  --external:@aws-sdk/client-s3 \
+  --external:sharp
+
+# or alternatively exclude all packages from node_modules by setting external packages
+npx esbuild index.ts --bundle \
+  --minify \
+  --platform=node \
+  --target=node22 \
+  --outfile=dist/index.js \
+  --packages=external
+```
+
 ### Test the lambda functions locally in Podman
 Python: https://docs.aws.amazon.com/lambda/latest/dg/python-image.html#python-image-instructions
 TypeScript: https://docs.aws.amazon.com/lambda/latest/dg/typescript-image.html
