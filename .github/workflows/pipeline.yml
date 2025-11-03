@@ -105,14 +105,6 @@ jobs:
       actions: read
 
     steps:
-    # - name: Configure AWS Credentials
-    #   # This action takes your secrets and correctly sets up the AWS CLI environment
-    #   uses: aws-actions/configure-aws-credentials@v5.1.0
-    #   with:
-    #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    #     aws-region: ${{ vars.AWS_REGION }} # Use the region secret
-
     - name: Configure AWS Credentials with OIDC JWT Token for STS Access
       # See https://docs.github.com/en/actions/concepts/security/openid-connect
       uses: aws-actions/configure-aws-credentials@v5.1.0
@@ -143,15 +135,6 @@ jobs:
         PYTHON_APP_LAYER_NAME: Fiscalismia_RawDataETL_PythonDependencies
         PYTHON_INFRA_LAYER_NAME: Infrastructure_PythonDependencies
       run: |
-        aws sts get-caller-identity
-        aws s3 ls
-        aws s3 ls s3://${S3_BUCKET}/
-        aws s3 ls s3://${S3_BUCKET}/lambdas/fiscalismia/
-        aws s3 ls s3://${S3_BUCKET}/lambdas/infrastructure/
-        aws s3 ls s3://${S3_BUCKET}/share/
-        aws s3 ls s3://${S3_BUCKET}/share/temp1.txt
-        aws s3 cp s3://${S3_BUCKET}/lambdas/infrastructure/python/Infrastructure_ApiGatewayRouteThrottler.zip .
-
         export S3_UPLOAD_URI="s3://${S3_BUCKET}/${NODEJS_APP_LAYER_PREFIX}/${NODEJS_APP_LAYER_NAME}.zip"
         cd ${GITHUB_WORKSPACE}/layers/${NODEJS_APP_LAYER_NAME}/
         echo "Uploading to ${S3_UPLOAD_URI}"
@@ -207,14 +190,6 @@ jobs:
       actions: read
 
     steps:
-    # - name: Configure AWS Credentials
-    #   # This action takes your secrets and correctly sets up the AWS CLI environment
-    #   uses: aws-actions/configure-aws-credentials@v5.1.0
-    #   with:
-    #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    #     aws-region: ${{ vars.AWS_REGION }} # Use the region secret
-
     - name: Configure AWS Credentials with OIDC JWT Token for STS Access
       # See https://docs.github.com/en/actions/concepts/security/openid-connect
       uses: aws-actions/configure-aws-credentials@v5.1.0
@@ -243,13 +218,6 @@ jobs:
         PYTHON_INFRA_LAYER_PREFIX: lambdas/infrastructure/python
       run: |
         aws sts get-caller-identity
-        aws s3 ls
-        aws s3 ls s3://${S3_BUCKET}/
-        aws s3 ls s3://${S3_BUCKET}/lambdas/fiscalismia/
-        aws s3 ls s3://${S3_BUCKET}/lambdas/infrastructure/
-        aws s3 ls s3://${S3_BUCKET}/share/
-        aws s3 ls s3://${S3_BUCKET}/share/temp1.txt
-        aws s3 cp s3://${S3_BUCKET}/lambdas/infrastructure/python/Infrastructure_ApiGatewayRouteThrottler.zip .
 
         export S3_UPLOAD_URI="s3://${S3_BUCKET}/${PYTHON_INFRA_LAYER_PREFIX}/"
         cd ${GITHUB_WORKSPACE}/functions/python/
