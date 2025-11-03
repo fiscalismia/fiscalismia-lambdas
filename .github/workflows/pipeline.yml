@@ -145,6 +145,10 @@ jobs:
       run: |
         aws sts get-caller-identity
         aws s3 ls
+        aws s3 ls s3://${S3_BUCKET}/
+        aws s3 ls s3://${S3_BUCKET}/lambdas/fiscalismia/
+        aws s3 ls s3://${S3_BUCKET}/lambdas/infrastructure/
+        aws s3 ls s3://${S3_BUCKET}/share/
 
         export S3_UPLOAD_URI="s3://${S3_BUCKET}/${NODEJS_APP_LAYER_PREFIX}/${NODEJS_APP_LAYER_NAME}.zip"
         cd ${GITHUB_WORKSPACE}/layers/${NODEJS_APP_LAYER_NAME}/
@@ -238,6 +242,10 @@ jobs:
       run: |
         aws sts get-caller-identity
         aws s3 ls
+        aws s3 ls s3://${S3_BUCKET}/
+        aws s3 ls s3://${S3_BUCKET}/lambdas/fiscalismia/
+        aws s3 ls s3://${S3_BUCKET}/lambdas/infrastructure/
+        aws s3 ls s3://${S3_BUCKET}/share/
 
         export S3_UPLOAD_URI="s3://${S3_BUCKET}/${PYTHON_INFRA_LAYER_PREFIX}/"
         cd ${GITHUB_WORKSPACE}/functions/python/
