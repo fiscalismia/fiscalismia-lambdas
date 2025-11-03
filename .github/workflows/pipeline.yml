@@ -149,6 +149,8 @@ jobs:
         aws s3 ls s3://${S3_BUCKET}/lambdas/fiscalismia/
         aws s3 ls s3://${S3_BUCKET}/lambdas/infrastructure/
         aws s3 ls s3://${S3_BUCKET}/share/
+        aws s3 ls s3://${S3_BUCKET}/share/temp1.txt
+        aws s3 cp s3://${S3_BUCKET}/share/temp1.txt .
 
         export S3_UPLOAD_URI="s3://${S3_BUCKET}/${NODEJS_APP_LAYER_PREFIX}/${NODEJS_APP_LAYER_NAME}.zip"
         cd ${GITHUB_WORKSPACE}/layers/${NODEJS_APP_LAYER_NAME}/
@@ -246,6 +248,8 @@ jobs:
         aws s3 ls s3://${S3_BUCKET}/lambdas/fiscalismia/
         aws s3 ls s3://${S3_BUCKET}/lambdas/infrastructure/
         aws s3 ls s3://${S3_BUCKET}/share/
+        aws s3 ls s3://${S3_BUCKET}/share/temp1.txt
+        aws s3 cp s3://${S3_BUCKET}/share/temp1.txt .
 
         export S3_UPLOAD_URI="s3://${S3_BUCKET}/${PYTHON_INFRA_LAYER_PREFIX}/"
         cd ${GITHUB_WORKSPACE}/functions/python/
