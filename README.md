@@ -41,7 +41,7 @@ podman run --rm --entrypoint /bin/bash -it public.ecr.aws/lambda/nodejs:24-previ
 cd ~/git/fiscalismia-lambdas/scripts
 sudo chmod u+x create_function_archives.sh
 PROGRAMMING_LANG="typescript"
-bash create_create_function_archives.sh ${PROGRAMMING_LANG}
+bash create_function_archives.sh ${PROGRAMMING_LANG}
 
 ```
 

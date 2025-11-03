@@ -172,6 +172,11 @@ jobs:
         cd ${GITHUB_WORKSPACE}/scripts
         bash create_function_archives.sh ${PROGRAMMING_LANG}
 
+    - name: Setup NodeJS
+      uses: actions/setup-node@v6
+      with:
+        node-version: 22
+
     - name: Build and Zip TypeScript Lambda Functions
       env:
         PROGRAMMING_LANG: "typescript"
