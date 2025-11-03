@@ -100,17 +100,26 @@ jobs:
       - zip-python-layers
 
     permissions:
+      id-token: write # for aws OIDC STS tokens to work
       contents: read
       actions: read
 
     steps:
-    - name: Configure AWS Credentials
-      # This action takes your secrets and correctly sets up the AWS CLI environment
+    # - name: Configure AWS Credentials
+    #   # This action takes your secrets and correctly sets up the AWS CLI environment
+    #   uses: aws-actions/configure-aws-credentials@v5.1.0
+    #   with:
+    #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    #     aws-region: ${{ env.AWS_REGION }} # Use the region secret
+
+    - name: Configure AWS Credentials with OIDC JWT Token for STS Access
+      # See https://docs.github.com/en/actions/concepts/security/openid-connect
       uses: aws-actions/configure-aws-credentials@v5.1.0
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }} # Use the region secret
+        role-to-assume: arn:aws:iam::010928217051:role/OpenID_Connect_GithubActions_LambdaPipeline
+        role-session-name: S3Upload_Temporary_STS_Session
+        aws-region: ${{ env.AWS_REGION }}
 
     - name: Download NodeJS Layer Archives
       uses: actions/download-artifact@v4
@@ -187,17 +196,26 @@ jobs:
       - zip-python-lambda-functions
 
     permissions:
+      id-token: write # for aws OIDC STS tokens to work
       contents: read
       actions: read
 
     steps:
-    - name: Configure AWS Credentials
-      # This action takes your secrets and correctly sets up the AWS CLI environment
+    # - name: Configure AWS Credentials
+    #   # This action takes your secrets and correctly sets up the AWS CLI environment
+    #   uses: aws-actions/configure-aws-credentials@v5.1.0
+    #   with:
+    #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    #     aws-region: ${{ env.AWS_REGION }} # Use the region secret
+
+    - name: Configure AWS Credentials with OIDC JWT Token for STS Access
+      # See https://docs.github.com/en/actions/concepts/security/openid-connect
       uses: aws-actions/configure-aws-credentials@v5.1.0
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }} # Use the region secret
+        role-to-assume: arn:aws:iam::010928217051:role/OpenID_Connect_GithubActions_LambdaPipeline
+        role-session-name: S3Upload_Temporary_STS_Session
+        aws-region: ${{ env.AWS_REGION }}
 
     - name: Download Python Function Archives
       uses: actions/download-artifact@v4
