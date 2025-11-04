@@ -381,9 +381,6 @@ jobs:
         done
 # aws lambda publish-layer-version \
 #   --layer-name "${LAYER_NAME}" \
-#   --description "${LAYER_DESCRIPTION}" \
 #   --content S3Bucket=${S3_BUCKET},S3Key=${S3_PREFIX}/${S3_KEY}.zip \
-#   --compatible-runtimes ${LAYER_RUNTIME} \
-#   --compatible-architectures ${LAYER_ARCHITECTURE} \
-#   --region ${S3_REGION}
+#   --region ${{ vars.AWS_REGION }}
 # echo "################### NEW VERSION PUBLISHED FOR LAYER [${LAYER_NAME}] ##############"
