@@ -21,7 +21,6 @@ def log_context(context) -> None:
     print(f"  Function Version:     {context.function_version}")
     print(f"  Invoked Function ARN: {context.invoked_function_arn}")
     print(f"  Memory Limit (MB):    {context.memory_limit_in_mb}")
-    print(f"  Request ID:           {context.request_id}")
     print(f"  Log Group Name:       {context.log_group_name}")
     print(f"  Log Stream Name:      {context.log_stream_name}")
     print(f"  Remaining Time (ms):  {context.get_remaining_time_in_millis()}")
@@ -103,7 +102,6 @@ def lambda_handler(event, context):
         "statusCode": 200,
         "body": json.dumps({
             "message": "Lambda executed successfully",
-            "request_id": context.request_id,
             "sns_message": sns_message,
             "result": result
         }, default=str)
