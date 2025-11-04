@@ -1,5 +1,11 @@
 name: Fiscalismia-Lambda Deployment Pipeline
 
+env: # Global Environment variables for the entire pipeline
+  S3_BUCKET: fiscalismia-infrastructure
+  NODEJS_APP_PREFIX: lambdas/fiscalismia/nodejs
+  PYTHON_APP_PREFIX: lambdas/fiscalismia/python
+  PYTHON_INFRA_PREFIX: lambdas/infrastructure/python
+
 on:
   push:
     branches:
@@ -94,7 +100,7 @@ jobs:
           layers/*Python*/*
           !layers/*Python*/requirements.txt
 
-  upload-layers:
+  upload-layers-s3:
     runs-on: ubuntu-latest
     needs:
       - zip-nodejs-layers
@@ -128,33 +134,29 @@ jobs:
 
     - name: Upload Layer Archives to S3 bucket
       env:
-        S3_BUCKET: fiscalismia-infrastructure
-        NODEJS_APP_LAYER_PREFIX: lambdas/fiscalismia/nodejs
-        PYTHON_APP_LAYER_PREFIX: lambdas/fiscalismia/python
-        PYTHON_INFRA_LAYER_PREFIX: lambdas/infrastructure/python
         NODEJS_APP_LAYER_NAME: Fiscalismia_ImageProcessing_NodeJSDependencies
         PYTHON_APP_LAYER_NAME: Fiscalismia_RawDataETL_PythonDependencies
         PYTHON_INFRA_LAYER_NAME: Infrastructure_PythonDependencies
       run: |
-        export S3_UPLOAD_URI="s3://${S3_BUCKET}/${NODEJS_APP_LAYER_PREFIX}/${NODEJS_APP_LAYER_NAME}.zip"
+        export S3_UPLOAD_URI="s3://${S3_BUCKET}/${NODEJS_APP_PREFIX}/${NODEJS_APP_LAYER_NAME}.zip"
         cd ${GITHUB_WORKSPACE}/layers/${NODEJS_APP_LAYER_NAME}/
         echo "Uploading to ${S3_UPLOAD_URI}"
         ls -hla
         aws s3 cp ./${NODEJS_APP_LAYER_NAME}.zip ${S3_UPLOAD_URI}
 
-        export S3_UPLOAD_URI="s3://${S3_BUCKET}/${PYTHON_APP_LAYER_PREFIX}/${PYTHON_APP_LAYER_NAME}.zip"
+        export S3_UPLOAD_URI="s3://${S3_BUCKET}/${PYTHON_APP_PREFIX}/${PYTHON_APP_LAYER_NAME}.zip"
         cd ${GITHUB_WORKSPACE}/layers/${PYTHON_APP_LAYER_NAME}/
         echo "Uploading to ${S3_UPLOAD_URI}"
         ls -hla
         aws s3 cp ./${PYTHON_APP_LAYER_NAME}.zip ${S3_UPLOAD_URI}
 
-        export S3_UPLOAD_URI="s3://${S3_BUCKET}/${PYTHON_INFRA_LAYER_PREFIX}/${PYTHON_INFRA_LAYER_NAME}.zip"
+        export S3_UPLOAD_URI="s3://${S3_BUCKET}/${PYTHON_INFRA_PREFIX}/${PYTHON_INFRA_LAYER_NAME}.zip"
         cd ${GITHUB_WORKSPACE}/layers/${PYTHON_INFRA_LAYER_NAME}/
         echo "Uploading to ${S3_UPLOAD_URI}"
         ls -hla
         aws s3 cp ./${PYTHON_INFRA_LAYER_NAME}.zip ${S3_UPLOAD_URI}
 
-  zip-python-lambda-functions:
+  zip-lambda-functions:
     runs-on: ubuntu-latest
 
     permissions:
@@ -200,10 +202,10 @@ jobs:
         path: |
           functions/typescript/*.zip
 
-  upload-functions:
+  upload-functions-s3:
     runs-on: ubuntu-latest
     needs:
-      - zip-python-lambda-functions
+      - zip-lambda-functions
 
     permissions:
       id-token: write # for aws OIDC STS tokens to work
@@ -232,11 +234,6 @@ jobs:
         path: functions/typescript/
 
     - name: Upload Function Archives to S3 bucket
-      env:
-        S3_BUCKET: fiscalismia-infrastructure
-        NODEJS_APP_PREFIX: lambdas/fiscalismia/nodejs
-        PYTHON_APP_PREFIX: lambdas/fiscalismia/python
-        PYTHON_INFRA_PREFIX: lambdas/infrastructure/python
       run: |
         aws sts get-caller-identity
 
@@ -264,3 +261,41 @@ jobs:
         aws s3 sync . ${S3_UPLOAD_URI} \
           --exclude "*" \
           --include "Fiscalismia*.zip"
+
+  update-function-code:
+    runs-on: ubuntu-latest
+    needs:
+      - upload-functions-s3
+
+    permissions:
+      id-token: write # for aws OIDC STS tokens to work
+      contents: read
+      actions: read
+
+    steps:
+    - name: Configure AWS Credentials with OIDC JWT Token for STS Access
+      # See https://docs.github.com/en/actions/concepts/security/openid-connect
+      uses: aws-actions/configure-aws-credentials@v5.1.0
+      with:
+        role-to-assume: arn:aws:iam::010928217051:role/OpenID_Connect_GithubActions_LambdaPipeline
+        role-session-name: LambdaFunctionUpdate_Temporary_STS_Session
+        aws-region: ${{ vars.AWS_REGION }}
+
+    - name: Update Function Code
+      run: |
+        aws sts get-caller-identity
+      # Optional Layer and Function Update with Manual Approval
+      # aws lambda update-function-code \
+      #   --function-name "${function_name}" \
+      #   --s3-bucket ${S3_BUCKET} \
+      #   --s3-key ${function_s3_prefix}/${function_s3_key}.zip \
+      #   --region ${function_s3_region}
+
+# aws lambda publish-layer-version \
+#   --layer-name "${LAYER_NAME}" \
+#   --description "${LAYER_DESCRIPTION}" \
+#   --content S3Bucket=${S3_BUCKET},S3Key=${S3_PREFIX}/${S3_KEY}.zip \
+#   --compatible-runtimes ${LAYER_RUNTIME} \
+#   --compatible-architectures ${LAYER_ARCHITECTURE} \
+#   --region ${S3_REGION}
+# echo "################### NEW VERSION PUBLISHED FOR LAYER [${LAYER_NAME}] ##############"
