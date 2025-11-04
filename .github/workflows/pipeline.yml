@@ -5,6 +5,9 @@ env: # Global Environment variables for the entire pipeline
   NODEJS_APP_PREFIX: lambdas/fiscalismia/nodejs
   PYTHON_APP_PREFIX: lambdas/fiscalismia/python
   PYTHON_INFRA_PREFIX: lambdas/infrastructure/python
+  NODEJS_APP_LAYER_NAME: Fiscalismia_ImageProcessing_NodeJSDependencies
+  PYTHON_APP_LAYER_NAME: Fiscalismia_RawDataETL_PythonDependencies
+  PYTHON_INFRA_LAYER_NAME: Infrastructure_PythonDependencies
 
 on:
   push:
@@ -136,10 +139,6 @@ jobs:
         path: layers/
 
     - name: Upload Layer Archives to S3 bucket
-      env:
-        NODEJS_APP_LAYER_NAME: Fiscalismia_ImageProcessing_NodeJSDependencies
-        PYTHON_APP_LAYER_NAME: Fiscalismia_RawDataETL_PythonDependencies
-        PYTHON_INFRA_LAYER_NAME: Infrastructure_PythonDependencies
       run: |
         export S3_UPLOAD_URI="s3://${S3_BUCKET}/${NODEJS_APP_PREFIX}/${NODEJS_APP_LAYER_NAME}.zip"
         cd ${GITHUB_WORKSPACE}/layers/${NODEJS_APP_LAYER_NAME}/
@@ -375,8 +374,9 @@ jobs:
 
         cd ${GITHUB_WORKSPACE}/layers/
         ls -l
-        for file in *zip; do
-          layer_name="${file%.*}"
+        for folder in */; do
+          cd ${GITHUB_WORKSPACE}/layers/${folder}
+          layer_name="${folder}"
           aws lambda list-layer-versions --layer-name ${layer_name}
         done
 
