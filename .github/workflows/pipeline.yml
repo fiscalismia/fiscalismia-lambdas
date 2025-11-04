@@ -237,6 +237,7 @@ jobs:
       run: |
         aws sts get-caller-identity
 
+        ### PYTHON INFRASTRUCTURE DEPLOYMENT ###
         export S3_UPLOAD_URI="s3://${S3_BUCKET}/${PYTHON_INFRA_PREFIX}/"
         cd ${GITHUB_WORKSPACE}/functions/python/
         echo && echo "##### Syncing the following files to ${S3_UPLOAD_URI}"
@@ -246,6 +247,7 @@ jobs:
           --include "Infra*.zip" \
           --include "Test*.zip"
 
+        ### PYTHON APPLICATION DEPLOYMENT ###
         export S3_UPLOAD_URI="s3://${S3_BUCKET}/${PYTHON_APP_PREFIX}/"
         cd ${GITHUB_WORKSPACE}/functions/python/
         echo && echo "##### Syncing the following files to ${S3_UPLOAD_URI}"
@@ -254,6 +256,7 @@ jobs:
           --exclude "*" \
           --include "Fiscalismia*.zip"
 
+        ### TYPESCRIPT APPLICATION DEPLOYMENT ###
         export S3_UPLOAD_URI="s3://${S3_BUCKET}/${NODEJS_APP_PREFIX}/"
         cd ${GITHUB_WORKSPACE}/functions/typescript/
         echo && echo "##### Syncing the following files to ${S3_UPLOAD_URI}"
@@ -265,6 +268,7 @@ jobs:
   update-function-code:
     runs-on: ubuntu-latest
     needs:
+      - zip-lambda-functions
       - upload-functions-s3
 
     permissions:
@@ -281,9 +285,35 @@ jobs:
         role-session-name: LambdaFunctionUpdate_Temporary_STS_Session
         aws-region: ${{ vars.AWS_REGION }}
 
+    - name: Download Python Function Archives
+      uses: actions/download-artifact@v4
+      with:
+        name: python-function-archives
+        path: functions/python/
+
+    - name: Download TypeScript Function Archives
+      uses: actions/download-artifact@v4
+      with:
+        name: typescript-function-archives
+        path: functions/typescript/
+
     - name: Update Function Code
       run: |
         aws sts get-caller-identity
+        aws lambda list-functions | grep FunctionName
+
+        ### TYPESCRIPT FUNCTION UPDATE ###
+        cd ${GITHUB_WORKSPACE}/functions/typescript/
+        for file in *zip ;do
+          echo "updating Lambda with ${file} persisted in S3"
+        done
+
+        ### PYTHON FUNCTION UPDATE ###
+        cd ${GITHUB_WORKSPACE}/functions/python/
+        for file in *zip ;do
+          echo "updating Lambda with ${file} persisted in S3"
+        done
+
       # Optional Layer and Function Update with Manual Approval
       # aws lambda update-function-code \
       #   --function-name "${function_name}" \
