@@ -376,10 +376,9 @@ jobs:
         ls -l
         for folder in */; do
           cd ${GITHUB_WORKSPACE}/layers/${folder}
-          layer_name="${folder}"
+          layer_name="$(basename $folder)"
           aws lambda list-layer-versions --layer-name ${layer_name}
         done
-
 # aws lambda publish-layer-version \
 #   --layer-name "${LAYER_NAME}" \
 #   --description "${LAYER_DESCRIPTION}" \
