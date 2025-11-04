@@ -268,7 +268,6 @@ jobs:
   update-function-code:
     runs-on: ubuntu-latest
     needs:
-      - zip-lambda-functions
       - upload-functions-s3
 
     permissions:
@@ -302,16 +301,28 @@ jobs:
         aws sts get-caller-identity
         aws lambda list-functions | grep FunctionName
 
-        ### TYPESCRIPT FUNCTION UPDATE ###
+        ### TYPESCRIPT APPLICATION FUNCTION UPDATE ###
         cd ${GITHUB_WORKSPACE}/functions/typescript/
-        for file in *zip ;do
-          echo "updating Lambda with ${file} persisted in S3"
+        for file in *zip;do
+          if [[ "${file}" == "Infrastructure"* ]]; then
+            echo "updating Lambda with latest ${file} persisted in S3"
+          fi
         done
 
-        ### PYTHON FUNCTION UPDATE ###
+        ### PYTHON APPLICATION FUNCTION UPDATE ###
         cd ${GITHUB_WORKSPACE}/functions/python/
-        for file in *zip ;do
-          echo "updating Lambda with ${file} persisted in S3"
+        for file in *zip;do
+          if [[ "${file}" == "Infrastructure"* ]]; then
+            echo "updating Lambda with latest ${file} persisted in S3"
+          fi
+        done
+
+        ### PYTHON INFRASTRUCTURE FUNCTION UPDATE ###
+        cd ${GITHUB_WORKSPACE}/functions/python/
+        for file in *zip;do
+          if [[ "${file}" == "Infrastructure"* ]]; then
+            echo "updating Lambda with latest ${file} persisted in S3"
+          fi
         done
 
       # Optional Layer and Function Update with Manual Approval
