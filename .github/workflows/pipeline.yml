@@ -304,16 +304,32 @@ jobs:
         ### TYPESCRIPT APPLICATION FUNCTION UPDATE ###
         cd ${GITHUB_WORKSPACE}/functions/typescript/
         for file in *zip;do
-          if [[ "${file}" == "Infrastructure"* ]]; then
-            echo "updating Lambda with latest ${file} persisted in S3"
+          if [[ "${file}" == "Fiscalismia"* ]]; then
+            echo "updating Lambda with latest ${file}"
+            echo "persisted in ${S3_BUCKET}/${NODEJS_APP_PREFIX}"
+            function_name="${file%.*}"
+            aws lambda update-function-code \
+              --function-name "${function_name}" \
+              --s3-bucket ${S3_BUCKET} \
+              --s3-key ${NODEJS_APP_PREFIX}/${file} \
+              --region ${{ vars.AWS_REGION }}
+            sleep 3
           fi
         done
 
         ### PYTHON APPLICATION FUNCTION UPDATE ###
         cd ${GITHUB_WORKSPACE}/functions/python/
         for file in *zip;do
-          if [[ "${file}" == "Infrastructure"* ]]; then
-            echo "updating Lambda with latest ${file} persisted in S3"
+          if [[ "${file}" == "Fiscalismia"* ]]; then
+            echo "updating Lambda with latest ${file}"
+            echo "persisted in ${S3_BUCKET}/${PYTHON_APP_PREFIX}"
+            function_name="${file%.*}"
+            aws lambda update-function-code \
+              --function-name "${function_name}" \
+              --s3-bucket ${S3_BUCKET} \
+              --s3-key ${PYTHON_APP_PREFIX}/${file} \
+              --region ${{ vars.AWS_REGION }}
+            sleep 3
           fi
         done
 
@@ -321,16 +337,17 @@ jobs:
         cd ${GITHUB_WORKSPACE}/functions/python/
         for file in *zip;do
           if [[ "${file}" == "Infrastructure"* ]]; then
-            echo "updating Lambda with latest ${file} persisted in S3"
+            echo "updating Lambda with latest ${file}"
+            echo "persisted in ${S3_BUCKET}/${PYTHON_INFRA_PREFIX}"
+            function_name="${file%.*}"
+            aws lambda update-function-code \
+              --function-name "${function_name}" \
+              --s3-bucket ${S3_BUCKET} \
+              --s3-key ${PYTHON_INFRA_PREFIX}/${file} \
+              --region ${{ vars.AWS_REGION }}
+            sleep 3
           fi
         done
-
-      # Optional Layer and Function Update with Manual Approval
-      # aws lambda update-function-code \
-      #   --function-name "${function_name}" \
-      #   --s3-bucket ${S3_BUCKET} \
-      #   --s3-key ${function_s3_prefix}/${function_s3_key}.zip \
-      #   --region ${function_s3_region}
 
 # aws lambda publish-layer-version \
 #   --layer-name "${LAYER_NAME}" \
