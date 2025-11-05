@@ -13,13 +13,28 @@ on:
   push:
     branches:
       - main
-      - release
       - pipeline_testing
   pull_request:
     branches:
-      - main
       - release
-      - pipeline_testing
+  workflow_dispatch: # manual triggering
+    inputs:
+      layer_name:
+        description: 'Which Layer to deploy'
+        required: true
+        default: none
+        type: choice
+        options:
+        - Fiscalismia_ImageProcessing_NodeJSDependencies
+        - Fiscalismia_RawDataETL_PythonDependencies
+        - Infrastructure_PythonDependencies
+        - all
+        - none
+      update_functions:
+        description: 'Should functions be updated?'
+        required: true
+        default: false
+        type: boolean
 
 jobs:
   zip-nodejs-layers:
@@ -269,7 +284,8 @@ jobs:
           --include "Fiscalismia*.zip"
 
   update-function-code:
-    if: github.ref == 'refs/heads/main' # only updates functions on main branch
+    # Only run on manual trigger AND when update_functions is true
+    if: github.event_name == 'workflow_dispatch' && inputs.update_functions == true
     runs-on: ubuntu-latest
     needs:
       - upload-functions-s3
@@ -337,7 +353,8 @@ jobs:
         update_lambda_functions "functions/python" "${PYTHON_INFRA_PREFIX}" "@(Infrastructure|Test)*"
 
   update-layer-versions:
-    if: github.ref == 'refs/heads/main' # only updates functions on main branch
+    # runs only on manual trigger and if layers are selected
+    if: github.event_name == 'workflow_dispatch' && inputs.layer_name != 'none'
     runs-on: ubuntu-latest
     needs:
       - upload-layers-s3
@@ -369,8 +386,12 @@ jobs:
         path: layers/
 
     - name: Update Layer Version
+      env:
+        SELECTED_LAYER: ${{ inputs.layer_name }}
       run: |
         aws sts get-caller-identity
+
+        echo "Selected Layer to Deploy: ${SELECTED_LAYER}"
 
         ### LOG CURRENT LAYER VERSIONS ###
         cd ${GITHUB_WORKSPACE}/layers/
@@ -381,20 +402,26 @@ jobs:
           aws lambda list-layer-versions --layer-name ${layer_name}
         done
 
-        echo "Publishing new layer version for ${NODEJS_APP_LAYER_NAME}"
-        aws lambda publish-layer-version \
-          --layer-name "${NODEJS_APP_LAYER_NAME}" \
-          --content S3Bucket=${S3_BUCKET},S3Key=${NODEJS_APP_PREFIX}/${NODEJS_APP_LAYER_NAME}.zip \
-          --region ${{ vars.AWS_REGION }}
+        if [[ "${SELECTED_LAYER}" == "all" || "${SELECTED_LAYER}" == "${NODEJS_APP_LAYER_NAME}" ]]; then
+          echo "Publishing new layer version for ${NODEJS_APP_LAYER_NAME}"
+          aws lambda publish-layer-version \
+            --layer-name "${NODEJS_APP_LAYER_NAME}" \
+            --content S3Bucket=${S3_BUCKET},S3Key=${NODEJS_APP_PREFIX}/${NODEJS_APP_LAYER_NAME}.zip \
+            --region ${{ vars.AWS_REGION }}
+        fi
 
-        echo "Publishing new layer version for ${PYTHON_APP_LAYER_NAME}"
-        aws lambda publish-layer-version \
-          --layer-name "${PYTHON_APP_LAYER_NAME}" \
-          --content S3Bucket=${S3_BUCKET},S3Key=${PYTHON_APP_PREFIX}/${PYTHON_APP_LAYER_NAME}.zip \
-          --region ${{ vars.AWS_REGION }}
+        if [[ "${SELECTED_LAYER}" == "all" || "${SELECTED_LAYER}" == "${PYTHON_APP_LAYER_NAME}" ]]; then
+          echo "Publishing new layer version for ${PYTHON_APP_LAYER_NAME}"
+          aws lambda publish-layer-version \
+            --layer-name "${PYTHON_APP_LAYER_NAME}" \
+            --content S3Bucket=${S3_BUCKET},S3Key=${PYTHON_APP_PREFIX}/${PYTHON_APP_LAYER_NAME}.zip \
+            --region ${{ vars.AWS_REGION }}
+        fi
 
-        echo "Publishing new layer version for ${PYTHON_INFRA_LAYER_NAME}"
-        aws lambda publish-layer-version \
-          --layer-name "${PYTHON_INFRA_LAYER_NAME}" \
-          --content S3Bucket=${S3_BUCKET},S3Key=${PYTHON_INFRA_PREFIX}/${PYTHON_INFRA_LAYER_NAME}.zip \
-          --region ${{ vars.AWS_REGION }}
+        if [[ "${SELECTED_LAYER}" == "all" || "${SELECTED_LAYER}" == "${PYTHON_INFRA_LAYER_NAME}" ]]; then
+          echo "Publishing new layer version for ${PYTHON_INFRA_LAYER_NAME}"
+          aws lambda publish-layer-version \
+            --layer-name "${PYTHON_INFRA_LAYER_NAME}" \
+            --content S3Bucket=${S3_BUCKET},S3Key=${PYTHON_INFRA_PREFIX}/${PYTHON_INFRA_LAYER_NAME}.zip \
+            --region ${{ vars.AWS_REGION }}
+        fi
