@@ -390,11 +390,11 @@ jobs:
         echo "Publishing new layer version for ${PYTHON_APP_LAYER_NAME}"
         aws lambda publish-layer-version \
           --layer-name "${PYTHON_APP_LAYER_NAME}" \
-          --content S3Bucket=${S3_BUCKET},S3Key=${NODEJS_APP_PREFIX}/${PYTHON_APP_LAYER_NAME}.zip \
+          --content S3Bucket=${S3_BUCKET},S3Key=${PYTHON_APP_PREFIX}/${PYTHON_APP_LAYER_NAME}.zip \
           --region ${{ vars.AWS_REGION }}
 
         echo "Publishing new layer version for ${PYTHON_INFRA_LAYER_NAME}"
         aws lambda publish-layer-version \
           --layer-name "${PYTHON_INFRA_LAYER_NAME}" \
-          --content S3Bucket=${S3_BUCKET},S3Key=${NODEJS_APP_PREFIX}/${PYTHON_INFRA_LAYER_NAME}.zip \
+          --content S3Bucket=${S3_BUCKET},S3Key=${PYTHON_INFRA_PREFIX}/${PYTHON_INFRA_LAYER_NAME}.zip \
           --region ${{ vars.AWS_REGION }}
