@@ -372,6 +372,7 @@ jobs:
       run: |
         aws sts get-caller-identity
 
+        ### LOG CURRENT LAYER VERSIONS ###
         cd ${GITHUB_WORKSPACE}/layers/
         ls -l
         for folder in */; do
@@ -379,8 +380,21 @@ jobs:
           layer_name="$(basename $folder)"
           aws lambda list-layer-versions --layer-name ${layer_name}
         done
-# aws lambda publish-layer-version \
-#   --layer-name "${LAYER_NAME}" \
-#   --content S3Bucket=${S3_BUCKET},S3Key=${S3_PREFIX}/${S3_KEY}.zip \
-#   --region ${{ vars.AWS_REGION }}
-# echo "################### NEW VERSION PUBLISHED FOR LAYER [${LAYER_NAME}] ##############"
+
+        echo "Publishing new layer version for ${NODEJS_APP_LAYER_NAME}"
+        aws lambda publish-layer-version \
+          --layer-name "${NODEJS_APP_LAYER_NAME}" \
+          --content S3Bucket=${S3_BUCKET},S3Key=${NODEJS_APP_PREFIX}/${NODEJS_APP_LAYER_NAME}.zip \
+          --region ${{ vars.AWS_REGION }}
+
+        echo "Publishing new layer version for ${PYTHON_APP_LAYER_NAME}"
+        aws lambda publish-layer-version \
+          --layer-name "${PYTHON_APP_LAYER_NAME}" \
+          --content S3Bucket=${S3_BUCKET},S3Key=${NODEJS_APP_PREFIX}/${PYTHON_APP_LAYER_NAME}.zip \
+          --region ${{ vars.AWS_REGION }}
+
+        echo "Publishing new layer version for ${PYTHON_INFRA_LAYER_NAME}"
+        aws lambda publish-layer-version \
+          --layer-name "${PYTHON_INFRA_LAYER_NAME}" \
+          --content S3Bucket=${S3_BUCKET},S3Key=${NODEJS_APP_PREFIX}/${PYTHON_INFRA_LAYER_NAME}.zip \
+          --region ${{ vars.AWS_REGION }}
