@@ -37,6 +37,38 @@ on:
         type: boolean
 
 jobs:
+  log-workflow-inputs:
+    # Logs Inputs when triggering a manual workflow
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+    - name: Display Manual Run - Workflow Dispatch Configuration
+      run: |
+        cat << 'EOF'
+        ╔════════════════════════════════════════════════════════════════════════╗
+        ║                   WORKFLOW DISPATCH CONFIGURATION                      ║
+        ╠════════════════════════════════════════════════════════════════════════╣
+        ║                                                                        ║
+        ║  Triggered By:        ${{ github.actor }}
+        ║  Branch:              ${{ github.ref_name }}
+        ║  Repository:          ${{ github.repository }}
+        ║  Workflow Run ID:     ${{ github.run_id }}
+        ║  Run Number:          ${{ github.run_number }}
+        ║                                                                        ║
+        ╠════════════════════════════════════════════════════════════════════════╣
+        ║                          INPUT PARAMETERS                              ║
+        ╠════════════════════════════════════════════════════════════════════════╣
+        ║                                                                        ║
+        ║  Layer to Deploy:     ${{ inputs.layer_name }}
+        ║  Update Functions:    ${{ inputs.update_functions }}
+        ║                                                                        ║
+        ╚════════════════════════════════════════════════════════════════════════╝
+        EOF
+
   zip-nodejs-layers:
     runs-on: ubuntu-latest
 
@@ -403,7 +435,7 @@ jobs:
         done
 
         if [[ "${SELECTED_LAYER}" == "all" || "${SELECTED_LAYER}" == "${NODEJS_APP_LAYER_NAME}" ]]; then
-          echo "Publishing new layer version for ${NODEJS_APP_LAYER_NAME}"
+          echo "### Publishing new layer version for ${NODEJS_APP_LAYER_NAME}"
           aws lambda publish-layer-version \
             --layer-name "${NODEJS_APP_LAYER_NAME}" \
             --content S3Bucket=${S3_BUCKET},S3Key=${NODEJS_APP_PREFIX}/${NODEJS_APP_LAYER_NAME}.zip \
@@ -411,7 +443,7 @@ jobs:
         fi
 
         if [[ "${SELECTED_LAYER}" == "all" || "${SELECTED_LAYER}" == "${PYTHON_APP_LAYER_NAME}" ]]; then
-          echo "Publishing new layer version for ${PYTHON_APP_LAYER_NAME}"
+          echo "### Publishing new layer version for ${PYTHON_APP_LAYER_NAME}"
           aws lambda publish-layer-version \
             --layer-name "${PYTHON_APP_LAYER_NAME}" \
             --content S3Bucket=${S3_BUCKET},S3Key=${PYTHON_APP_PREFIX}/${PYTHON_APP_LAYER_NAME}.zip \
@@ -419,7 +451,7 @@ jobs:
         fi
 
         if [[ "${SELECTED_LAYER}" == "all" || "${SELECTED_LAYER}" == "${PYTHON_INFRA_LAYER_NAME}" ]]; then
-          echo "Publishing new layer version for ${PYTHON_INFRA_LAYER_NAME}"
+          echo "### Publishing new layer version for ${PYTHON_INFRA_LAYER_NAME}"
           aws lambda publish-layer-version \
             --layer-name "${PYTHON_INFRA_LAYER_NAME}" \
             --content S3Bucket=${S3_BUCKET},S3Key=${PYTHON_INFRA_PREFIX}/${PYTHON_INFRA_LAYER_NAME}.zip \
