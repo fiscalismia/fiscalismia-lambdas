@@ -1,4 +1,4 @@
-name: Fiscalismia-Lambda Deployment Pipeline
+name: Fiscalismia-Lambdas Deployment Pipeline
 
 env: # Global Environment variables for the entire pipeline
   S3_BUCKET: fiscalismia-infrastructure
