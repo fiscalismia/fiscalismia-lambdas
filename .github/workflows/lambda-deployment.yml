@@ -8,6 +8,12 @@ env: # Global Environment variables for the entire pipeline
   NODEJS_APP_LAYER_NAME: Fiscalismia_ImageProcessing_NodeJSDependencies
   PYTHON_APP_LAYER_NAME: Fiscalismia_RawDataETL_PythonDependencies
   PYTHON_INFRA_LAYER_NAME: Infrastructure_PythonDependencies
+  NODEJS_APP_FUNCTION_NAME: Fiscalismia_ImageProcessing
+  PYTHON_APP_FUNCTION_NAME: Fiscalismia_RawDataETL
+  PYTHON_INFRA_FUNCTION_NAME_TEST: Test_PythonSandbox
+  PYTHON_INFRA_FUNCTION_NAME_APIGW_THROTTLER: Infrastructure_ApiGatewayRouteThrottler
+  PYTHON_INFRA_FUNCTION_NAME_NOTIFY_SENDER: Infrastructure_NotificationMessageSender
+  PYTHON_INFRA_FUNCTION_NAME_TF_DESTROYER: Infrastructure_TerraformDestroyTrigger
 
 on:
   push:
@@ -456,24 +462,54 @@ jobs:
 
         if [[ "${SELECTED_LAYER}" == "all" || "${SELECTED_LAYER}" == "${NODEJS_APP_LAYER_NAME}" ]]; then
           echo "### Publishing new layer version for ${NODEJS_APP_LAYER_NAME}"
-          aws lambda publish-layer-version \
+          LAYER_VERSION_ARN=$(aws lambda publish-layer-version \
             --layer-name "${NODEJS_APP_LAYER_NAME}" \
             --content S3Bucket=${S3_BUCKET},S3Key=${NODEJS_APP_PREFIX}/${NODEJS_APP_LAYER_NAME}.zip \
+            --region ${{ vars.AWS_REGION }} \
+            --query 'LayerVersionArn' \
+            --output text)
+          aws lambda update-function-configuration \
+            --function-name "${NODEJS_APP_FUNCTION_NAME}" \
+            --layers ${LAYER_VERSION_ARN} \
             --region ${{ vars.AWS_REGION }}
         fi
 
         if [[ "${SELECTED_LAYER}" == "all" || "${SELECTED_LAYER}" == "${PYTHON_APP_LAYER_NAME}" ]]; then
           echo "### Publishing new layer version for ${PYTHON_APP_LAYER_NAME}"
-          aws lambda publish-layer-version \
+          LAYER_VERSION_ARN=$(aws lambda publish-layer-version \
             --layer-name "${PYTHON_APP_LAYER_NAME}" \
             --content S3Bucket=${S3_BUCKET},S3Key=${PYTHON_APP_PREFIX}/${PYTHON_APP_LAYER_NAME}.zip \
+            --region ${{ vars.AWS_REGION }} \
+            --query 'LayerVersionArn' \
+            --output text)
+          aws lambda update-function-configuration \
+            --function-name "${PYTHON_APP_FUNCTION_NAME}" \
+            --layers ${LAYER_VERSION_ARN} \
             --region ${{ vars.AWS_REGION }}
         fi
 
         if [[ "${SELECTED_LAYER}" == "all" || "${SELECTED_LAYER}" == "${PYTHON_INFRA_LAYER_NAME}" ]]; then
           echo "### Publishing new layer version for ${PYTHON_INFRA_LAYER_NAME}"
-          aws lambda publish-layer-version \
+          LAYER_VERSION_ARN=$(aws lambda publish-layer-version \
             --layer-name "${PYTHON_INFRA_LAYER_NAME}" \
             --content S3Bucket=${S3_BUCKET},S3Key=${PYTHON_INFRA_PREFIX}/${PYTHON_INFRA_LAYER_NAME}.zip \
+            --region ${{ vars.AWS_REGION }} \
+            --query 'LayerVersionArn' \
+            --output text)
+          aws lambda update-function-configuration \
+            --function-name "${PYTHON_INFRA_FUNCTION_NAME_TEST}" \
+            --layers ${LAYER_VERSION_ARN} \
+            --region ${{ vars.AWS_REGION }}
+          aws lambda update-function-configuration \
+            --function-name "${PYTHON_INFRA_FUNCTION_NAME_APIGW_THROTTLER}" \
+            --layers ${LAYER_VERSION_ARN} \
+            --region ${{ vars.AWS_REGION }}
+          aws lambda update-function-configuration \
+            --function-name "${PYTHON_INFRA_FUNCTION_NAME_NOTIFY_SENDER}" \
+            --layers ${LAYER_VERSION_ARN} \
+            --region ${{ vars.AWS_REGION }}
+          aws lambda update-function-configuration \
+            --function-name "${PYTHON_INFRA_FUNCTION_NAME_TF_DESTROYER}" \
+            --layers ${LAYER_VERSION_ARN} \
             --region ${{ vars.AWS_REGION }}
         fi
