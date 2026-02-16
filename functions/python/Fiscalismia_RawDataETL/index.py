@@ -6,15 +6,21 @@ import requests # not in aws runtime
 import time
 from io import BytesIO
 from openpyxl import load_workbook # not in aws runtime
+from aws_lambda_powertools.utilities import parameters
 
 def authenticate_request(body, headers):
   ALLOW_IP_BASED_ACCESS = False
   contentLength = int(headers.get('Content-Length'))
   authorization = headers.get('authorization', None)
   requestIp = headers.get('X-Forwarded-For')
-  apiKeyEnvStr = os.getenv('API_KEY')
-  ipWhitelistEnvStr = os.getenv('IP_WHITELIST')
-  ipWhitelist = ipWhitelistEnvStr.split(",")
+
+  secret = parameters.get_secret(
+    "arn:aws:secretsmanager:eu-central-1:010928217051:secret:/api/fiscalismia/API_GW_SECRET_KEY-4AjIFN",
+    transform="json"
+  )
+  secret_api_key = secret["API_GW_SECRET_KEY"]
+  ip_whitelist_str = os.getenv('IP_WHITELIST')
+  ip_whitelist = ip_whitelist_str.split(",")
   # block access if payload is empty
   if body == None or contentLength == 0:
     return {
@@ -22,21 +28,21 @@ def authenticate_request(body, headers):
       "body": json.dumps({"message": "please provide a payload. Received empty request body."})
     }
   # block access if authorization header does not include the API TOKEN
-  if authorization == None or apiKeyEnvStr == None or authorization != apiKeyEnvStr:
+  if authorization == None or secret_api_key == None or authorization != secret_api_key:
     return {
       "statusCode": 403,
       "body": json.dumps({"message": "Invalid authorization header."})
     }
   # block access if requesting IP-address is not whitelisted
-  if ipWhitelistEnvStr == None or ipWhitelistEnvStr == "":
+  if ip_whitelist_str == None or ip_whitelist_str == "":
     return {
       "statusCode": 422,
       "body": json.dumps({"message": "ip address whitelist not found among environment variables."})
     }
-  if len(ipWhitelist) == 1 and ipWhitelist[0] == "0.0.0.0":
+  if len(ip_whitelist) == 1 and ip_whitelist[0] == "0.0.0.0":
     ALLOW_IP_BASED_ACCESS = True
-  elif len(ipWhitelist) > 1:
-    for ip in ipWhitelist:
+  elif len(ip_whitelist) > 1:
+    for ip in ip_whitelist:
       if requestIp == ip:
         ALLOW_IP_BASED_ACCESS = True
   if not ALLOW_IP_BASED_ACCESS:
@@ -76,12 +82,15 @@ def lambda_handler(event, context):
   debug_info = get_debug_info(event, decodedBody, headers)
   # return debug_info
   try:
-    # Evaluate request body
-    sheet_url = decodedBody
+    secret = parameters.get_secret(
+      "arn:aws:secretsmanager:eu-central-1:010928217051:secret:/google/sheets/fiscalismia-datasource-url-k38OGm",
+      transform="json"
+    )
+    sheet_url = secret["GOOGLE_SHEETS_URL"]
     if not sheet_url or "docs.google.com/spreadsheets" not in sheet_url:
       return {
         "statusCode": 400,
-        "body": json.dumps({"error": "Missing spreadsheets url in body."})
+        "body": json.dumps({"error": "Missing spreadsheets url in lambda environment."})
       }
     if "pub?output=xlsx" in sheet_url or "export?format=xlsx" in sheet_url:
       pass
