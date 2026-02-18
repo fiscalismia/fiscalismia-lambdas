@@ -97,8 +97,8 @@ def lambda_handler(event, context):
     elif "/pubhtml" in sheet_url:
       sheet_url = sheet_url.split("/pubhtml")[0] + "/pub?output=xlsx"
 
-    # Download the spreadsheet into memory
-    response = requests.get(sheet_url)
+    # Download the spreadsheet from google docs into memory
+    response = requests.get(sheet_url, stream=True, timeout=(3, 10)) # (3s connect timeout, 10s read timeout)
     add_time_analysis_entry(start_time, "request spreadsheet via URL")
     if response.status_code != 200:
       return {
@@ -118,7 +118,7 @@ def lambda_handler(event, context):
     add_time_analysis_entry(start_time, "persist temp file to s3")
 
     # Load openpyxl workbook in memory for data extraction
-    workbook = load_workbook(workbook_buffer)
+    workbook = load_workbook(workbook_buffer, read_only=True, data_only=True, keep_links=False)
     add_time_analysis_entry(start_time, "loaded workbook into memory")
     logger.info("Loaded openpyxl workbook into memory")
     sheet_names = workbook.sheetnames
@@ -126,6 +126,7 @@ def lambda_handler(event, context):
     # log timedeltas for performance monitoring
     logger.info("finalized extract transform loading operation")
     log_time_analysis()
+    workbook.close()
     return {
       "statusCode": 200,
       "body": json.dumps({"sheets": sheet_names})
