@@ -1,6 +1,8 @@
 # fiscalismia-lambdas
 AWS Lambda function and layer code written in TypeScript and Python offering process automation for the Fiscalismia Web Service.
 
+## DEVELOPMENT
+
 ### Create Lambda Layers for either Python or TypeScript
 
 **Python**
@@ -42,7 +44,6 @@ cd ~/git/fiscalismia-lambdas/scripts
 sudo chmod u+x create_function_archives.sh
 PROGRAMMING_LANG="typescript"
 bash create_function_archives.sh ${PROGRAMMING_LANG}
-
 ```
 
 ### Local TypeScript Lambda Development
@@ -75,6 +76,23 @@ npx esbuild index.ts --bundle \
   --packages=external
 ```
 
+### Logging Deployed Functions
+
+```bash
+# use delayed polling via GetLogEvents API - can look at past invocations
+# format options: json|short|detailed
+aws logs tail /aws/lambda/Fiscalismia_RawDataETL \
+  --region eu-central-1 \
+  --follow \
+  --format json \
+  --since 1m
+# use near-realtime Websocket Streaming via cloudwatch live tail ($0.01 per minute after exceeding free tier)
+aws logs start-live-tail \
+  --log-group-identifiers "arn:aws:logs:eu-central-1:010928217051:log-group:/aws/lambda/Fiscalismia_RawDataETL" \
+  --region eu-central-1
+```
+
 ### Test the lambda functions locally in Podman
 Python: https://docs.aws.amazon.com/lambda/latest/dg/python-image.html#python-image-instructions
 TypeScript: https://docs.aws.amazon.com/lambda/latest/dg/typescript-image.html
+
