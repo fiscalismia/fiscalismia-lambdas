@@ -1,5 +1,6 @@
 import json
 import pandas as pd
+from io import BytesIO
 from timedelta_analysis import add_time_analysis_entry
 from ddl_schema import (
   HEADER_ROW,
@@ -102,7 +103,6 @@ def load_tables_from_sheet(sheet: pd.DataFrame) -> dict[str, pd.DataFrame]:
 
   return result
 
-
 def extract_and_transform_to_tsv(
   start_time: int,
   timestamp: str,
@@ -126,10 +126,10 @@ def extract_and_transform_to_tsv(
 
   tables = load_tables_from_sheet(sheet)
   for table_name, df in tables.items():
-    file_name = f"{timestamp}table_name.tsv"
+    file_name = f"{timestamp}-{table_name}.tsv"
     s3_key = f"transformed/{file_name}"
     logger.info(f"Extracted table '{table_name}'", extra={"shape": str(df.shape)})
-    s3_buffer = df.to_csv(file_name, sep="\t", index=False)
+    s3_buffer = BytesIO(df.to_csv(sep="\t", index=False).encode("utf-8"))
     s3_client.upload_fileobj(s3_buffer, s3_bucket, s3_key)
     logger.info(f"TSV persisted to s3://{s3_bucket}/{s3_key}")
 
