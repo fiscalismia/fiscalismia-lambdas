@@ -105,6 +105,7 @@ def load_tables_from_sheet(sheet: pd.DataFrame) -> dict[str, pd.DataFrame]:
 
 def extract_and_transform_to_tsv(
   start_time: int,
+  timestamp: str,
   sheet,
   s3_bucket: str,
   timedelta_analysis: list[str],
@@ -125,7 +126,12 @@ def extract_and_transform_to_tsv(
 
   tables = load_tables_from_sheet(sheet)
   for table_name, df in tables.items():
+    file_name = f"{timestamp}table_name.tsv"
+    s3_key = f"transformed/{file_name}"
     logger.info(f"Extracted table '{table_name}'", extra={"shape": str(df.shape)})
+    s3_buffer = df.to_csv(file_name, sep="\t", index=False)
+    s3_client.upload_fileobj(s3_buffer, s3_bucket, s3_key)
+    logger.info(f"TSV persisted to s3://{s3_bucket}/{s3_key}")
 
   add_time_analysis_entry(timedelta_analysis, start_time, "finalized TSV extraction from Finance sheet")
   return tables

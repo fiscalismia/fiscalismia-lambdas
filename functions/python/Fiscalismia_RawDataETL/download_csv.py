@@ -2,11 +2,10 @@ import pandas as pd
 from io import BytesIO
 from timedelta_analysis import add_time_analysis_entry
 import requests # not in aws runtime
-from datetime import datetime
-import zoneinfo
 
 def download_csv(
       start_time: int,
+      timestamp: str,
       sheet_url: str,
       s3_bucket: str,
       timedelta_analysis: list[str],
@@ -30,8 +29,6 @@ def download_csv(
     csv_buffer = BytesIO(raw_bytes)
 
     # Persist raw bytes to S3 as timestamped backup
-    berlin_tz = zoneinfo.ZoneInfo("Europe/Berlin")
-    timestamp = datetime.now(tz=berlin_tz).strftime("%Y-%m-%d-%H-%M-%S")
     s3_key = f"tmp/{timestamp}-Fiscalismia-Datasource.csv"
     add_time_analysis_entry(timedelta_analysis, start_time, "load sheet into memory temp file")
     s3_client.upload_fileobj(s3_buffer, s3_bucket, s3_key)

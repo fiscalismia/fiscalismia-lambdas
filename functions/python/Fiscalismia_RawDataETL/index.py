@@ -9,8 +9,12 @@ from download_csv import download_csv
 from clean_sheet_url import clean_sheet_url
 from timedelta_analysis import add_time_analysis_entry, log_time_analysis
 from extract_transform import extract_and_transform_to_tsv
+from datetime import datetime
+import zoneinfo
 s3_client = boto3.client('s3')
 s3_bucket = 'fiscalismia-raw-data-etl-storage'
+berlin_tz = zoneinfo.ZoneInfo("Europe/Berlin")
+timestamp = datetime.now(tz=berlin_tz).strftime("%Y-%m-%d-%H-%M-%S")
 logger = Logger(service="Fiscalismia_RawDataETL")
 def authenticate_request(body, headers):
   contentLength = int(headers.get('Content-Length', 0))
@@ -75,8 +79,8 @@ def lambda_handler(event, context):
     # Verify spreadsheet url is not malformed
     # Download the spreadsheet from google docs into memory
     sheet_url = clean_sheet_url(sheet_url, logger, "csv")
-    sheet = download_csv(start_time, sheet_url, s3_bucket, timedelta_analysis, s3_client, logger)
-    tables = extract_and_transform_to_tsv(start_time, sheet, s3_bucket, timedelta_analysis, s3_client, logger)
+    sheet = download_csv(start_time, timestamp, sheet_url, s3_bucket, timedelta_analysis, s3_client, logger)
+    tables = extract_and_transform_to_tsv(start_time, timestamp, sheet, s3_bucket, timedelta_analysis, s3_client, logger)
 
     # log timedeltas for performance monitoring
     logger.info("finalized extract transform loading operation")
