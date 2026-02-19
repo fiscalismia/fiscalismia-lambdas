@@ -3,7 +3,9 @@ import boto3
 import time
 from aws_lambda_powertools import Logger
 from aws_lambda_powertools.utilities import parameters
-from download_sheet import download_sheet
+from download_xlsx import download_xlsx
+from download_csv import download_csv
+from clean_sheet_url import clean_sheet_url
 from timedelta_analysis import add_time_analysis_entry, log_time_analysis
 from extract_transform import extract_and_transform_to_tsv
 s3_client = boto3.client('s3')
@@ -69,24 +71,13 @@ def lambda_handler(event, context):
       "arn:aws:secretsmanager:eu-central-1:010928217051:secret:/google/sheets/fiscalismia-datasource-url-k38OGm",
       transform="json"
     )
-    # Verify spreadsheet url is not malformed
     sheet_url = secret["GOOGLE_SHEETS_URL"]
-    if not sheet_url or "docs.google.com/spreadsheets" not in sheet_url:
-      return {
-        "statusCode": 400,
-        "body": json.dumps({"error": "Missing spreadsheets url in lambda environment."})
-      }
-    if "pub?output=xlsx" in sheet_url or "export?format=xlsx" in sheet_url:
-      pass
-    elif "/edit" in sheet_url:
-      sheet_url = sheet_url.split("/edit")[0] + "/export?format=xlsx"
-    elif "/view" in sheet_url:
-      sheet_url = sheet_url.split("/view")[0] + "/export?format=xlsx"
-    elif "/pubhtml" in sheet_url:
-      sheet_url = sheet_url.split("/pubhtml")[0] + "/pub?output=xlsx"
-
+    # Verify spreadsheet url is not malformed
     # Download the spreadsheet from google docs into memory
-    sheet = download_sheet(start_time, sheet_url, s3_bucket, timedelta_analysis, s3_client, logger)
+    sheet_url = clean_sheet_url(sheet_url, logger, "xlsx")
+    sheet = download_xlsx(start_time, sheet_url, s3_bucket, timedelta_analysis, s3_client, logger)
+    sheet_url = clean_sheet_url(sheet_url, logger, "csv")
+    sheet = download_csv(start_time, sheet_url, s3_bucket, timedelta_analysis, s3_client, logger)
     sheet_sanity_check = extract_and_transform_to_tsv(start_time, sheet, s3_bucket, timedelta_analysis, s3_client, logger)
 
     # log timedeltas for performance monitoring
