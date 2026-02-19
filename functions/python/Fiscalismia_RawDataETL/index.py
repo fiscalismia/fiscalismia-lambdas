@@ -31,12 +31,14 @@ def authenticate_request(body, headers):
   secret_api_key = secret.get("API_GW_SECRET_KEY", None)
   # block access if payload is sent
   if body or contentLength > 0:
+    logger.error("No payload expected. Request body should be empty.")
     return {
       "statusCode": 422,
       "body": json.dumps({"message": "No payload expected. Request body should be empty."})
     }
   # block access if authorization header does not include the API TOKEN
   if authorization == None or secret_api_key == None or authorization != secret_api_key:
+    logger.error("Invalid Authorization header.")
     return {
       "statusCode": 403,
       "body": json.dumps({"message": "Invalid Authorization header."})
@@ -93,7 +95,7 @@ def lambda_handler(event, context):
   except RuntimeError as e:
     logger.error("Runtime error during ETL", extra={"error": str(e)})
     return {
-      "statusCode": 500,
+      "statusCode": 400,
       "body": json.dumps({"error": str(e)})
     }
   except Exception as e:
