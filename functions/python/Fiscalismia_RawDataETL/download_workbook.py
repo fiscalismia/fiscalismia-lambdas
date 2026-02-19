@@ -1,6 +1,8 @@
 import json
+import pandas as pd
 from openpyxl import Workbook
 from openpyxl import load_workbook
+
 from io import BytesIO
 from timedelta_analysis import add_time_analysis_entry
 import requests # not in aws runtime
@@ -37,9 +39,16 @@ def download_sheet(
     logger.debug(f"Worksheet persisted to s3://{s3_bucket}/{s3_key}")
     add_time_analysis_entry(timedelta_analysis, start_time, "persist temp file to s3")
 
-    # Load openpyxl workbook in memory for data extraction
-    workbook: Workbook = load_workbook(workbook_buffer, read_only=True, data_only=True, keep_links=False)
+    # Load all sheets into DataFrames via calamine engine
+    sheets: dict[str, pd.DataFrame] = pd.read_excel(
+        workbook_buffer,
+        sheet_name='Finances',   # use None to read all sheets
+        engine="calamine", # fastest engine for xlsx reading
+        header=0,          # first row as column headers
+        na_filter=False,   # skip NA detection for performance
+        dtype=object,      # preserve raw cell values, no type inference
+    )
     add_time_analysis_entry(timedelta_analysis, start_time, "loaded workbook into memory")
-    logger.debug("Loaded openpyxl workbook into memory")
+    logger.debug("Loaded sheet into memory with pandas and calamine engine.")
 
-    return workbook
+    return sheets

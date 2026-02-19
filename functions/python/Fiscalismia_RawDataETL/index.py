@@ -87,13 +87,12 @@ def lambda_handler(event, context):
       sheet_url = sheet_url.split("/pubhtml")[0] + "/pub?output=xlsx"
 
     # Download the spreadsheet from google docs into memory
-    workbook = download_sheet(start_time, sheet_url, s3_bucket, timedelta_analysis, s3_client, logger)
-    sheet_names = workbook.sheetnames
+    sheets = download_sheet(start_time, sheet_url, s3_bucket, timedelta_analysis, s3_client, logger)
+    sheet_names = list(sheets.keys())
 
     # log timedeltas for performance monitoring
     logger.info("finalized extract transform loading operation")
     log_time_analysis(timedelta_analysis, logger)
-    workbook.close()
     return {
       "statusCode": 200,
       "body": json.dumps({"sheets": sheet_names})
