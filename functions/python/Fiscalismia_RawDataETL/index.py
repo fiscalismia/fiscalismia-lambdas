@@ -89,7 +89,7 @@ def lambda_handler(event, context):
     logger.info("finalized extract transform loading operation")
     log_time_analysis(timedelta_analysis, logger)
     return {
-      "statusCode": 200,
+      "statusCode": 202,
       "body": json.dumps(list(s3_presigned_urls))
     }
   except RuntimeError as e:
