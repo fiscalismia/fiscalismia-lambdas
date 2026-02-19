@@ -1,16 +1,13 @@
 import json
 import boto3
-import requests # not in aws runtime
 import time
-from openpyxl import Workbook
 from aws_lambda_powertools import Logger
 from aws_lambda_powertools.utilities import parameters
-from download_workbook import download_sheet
+from download_sheet import download_sheet
 from timedelta_analysis import add_time_analysis_entry, log_time_analysis
 s3_client = boto3.client('s3')
 s3_bucket = 'fiscalismia-raw-data-etl-storage'
 logger = Logger(service="Fiscalismia_RawDataETL")
-timedelta_analysis = []
 
 def authenticate_request(body, headers):
   contentLength = int(headers.get('Content-Length', 0))
@@ -56,6 +53,7 @@ def log_debug_info(event, headers, context, info_log=True):
   logger.debug("Debug info extracted", extra={"eventKeys": extractedEventKeys})
 
 def lambda_handler(event, context):
+  timedelta_analysis = []
   start_time = time.time_ns()
   add_time_analysis_entry(timedelta_analysis, start_time, "function invocation")
   body = event.get("body", None)
@@ -87,15 +85,25 @@ def lambda_handler(event, context):
       sheet_url = sheet_url.split("/pubhtml")[0] + "/pub?output=xlsx"
 
     # Download the spreadsheet from google docs into memory
-    sheets = download_sheet(start_time, sheet_url, s3_bucket, timedelta_analysis, s3_client, logger)
-    sheet_names = list(sheets.keys())
+    sheet = download_sheet(start_time, sheet_url, s3_bucket, timedelta_analysis, s3_client, logger)
+
+    row_count = sheet.shape[0]
+    col_count = int(sheet.shape[1])
+    sheet_sanity_check = json.dumps(
+      {
+        "size": f"{sheet.size} bytes",
+        "rows": row_count,
+        "columns": col_count,
+        "header": sheet.iloc[3, :].to_dict(orient="records"),
+        "tail": sheet.tail(1).astype(str).to_dict(orient="records"),
+      })
 
     # log timedeltas for performance monitoring
     logger.info("finalized extract transform loading operation")
     log_time_analysis(timedelta_analysis, logger)
     return {
       "statusCode": 200,
-      "body": json.dumps({"sheets": sheet_names})
+      "body": sheet_sanity_check
     }
   except RuntimeError as e:
     logger.error("Runtime error during ETL", extra={"error": str(e)})
