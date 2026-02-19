@@ -31,10 +31,10 @@ def authenticate_request(body, headers):
   secret_api_key = secret.get("API_GW_SECRET_KEY", None)
   # block access if payload is sent
   if body or contentLength > 0:
-    logger.error("No payload expected. Request body should be empty.")
+    logger.error(f"No payload expected. Request body should be empty. ContentLength: {contentLength}")
     return {
       "statusCode": 422,
-      "body": json.dumps({"message": "No payload expected. Request body should be empty."})
+      "body": json.dumps({"message": f"No payload expected. Request body should be empty. ContentLength: {contentLength}"})
     }
   # block access if authorization header does not include the API TOKEN
   if authorization == None or secret_api_key == None or authorization != secret_api_key:

@@ -47,6 +47,6 @@ def download_csv(
         engine="c",       # pyarrow engine is too large of a dependency
         low_memory=False  # Internally process the file in chunks, resulting in lower memory use while parsing
     )
-    add_time_analysis_entry(timedelta_analysis, start_time, "loaded CSV into memory via pyarrow")
+    add_time_analysis_entry(timedelta_analysis, start_time, "loaded CSV into memory via C engine")
     logger.debug(f"Loaded CSV into memory with pandas pyarrow engine. Shape: {csv.shape}")
     return csv
