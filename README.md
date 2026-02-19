@@ -81,11 +81,7 @@ npx esbuild index.ts --bundle \
 ```bash
 # use delayed polling via GetLogEvents API - can look at past invocations
 # format options: json|short|detailed
-aws logs tail /aws/lambda/Fiscalismia_RawDataETL \
-  --region eu-central-1 \
-  --follow \
-  --format json \
-  --since 1m
+aws logs tail /aws/lambda/Fiscalismia_RawDataETL --region eu-central-1 --follow --format json --since 1m
 # use near-realtime Websocket Streaming via cloudwatch live tail ($0.01 per minute after exceeding free tier)
 aws logs start-live-tail \
   --log-group-identifiers "arn:aws:logs:eu-central-1:010928217051:log-group:/aws/lambda/Fiscalismia_RawDataETL" \
