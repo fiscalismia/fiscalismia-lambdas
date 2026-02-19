@@ -83,7 +83,7 @@ def lambda_handler(event, context):
     log_time_analysis(timedelta_analysis, logger)
     return {
       "statusCode": 200,
-      "body": list(tables.keys()).to_dict()
+      "body": json.dumps(list(tables.keys()))
     }
   except RuntimeError as e:
     logger.error("Runtime error during ETL", extra={"error": str(e)})
