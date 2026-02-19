@@ -1,3 +1,4 @@
+# s3://fiscalismia-infrastructure/lambdas/fiscalismia/python/Fiscalismia_RawDataETL.zip
 import json
 import boto3
 import time
@@ -11,7 +12,6 @@ from extract_transform import extract_and_transform_to_tsv
 s3_client = boto3.client('s3')
 s3_bucket = 'fiscalismia-raw-data-etl-storage'
 logger = Logger(service="Fiscalismia_RawDataETL")
-
 def authenticate_request(body, headers):
   contentLength = int(headers.get('Content-Length', 0))
   authorization = headers.get('authorization', None)
