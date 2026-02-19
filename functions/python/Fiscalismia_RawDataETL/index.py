@@ -5,6 +5,7 @@ from aws_lambda_powertools import Logger
 from aws_lambda_powertools.utilities import parameters
 from download_sheet import download_sheet
 from timedelta_analysis import add_time_analysis_entry, log_time_analysis
+from extract_transform import extract_and_transform_to_tsv
 s3_client = boto3.client('s3')
 s3_bucket = 'fiscalismia-raw-data-etl-storage'
 logger = Logger(service="Fiscalismia_RawDataETL")
@@ -86,17 +87,7 @@ def lambda_handler(event, context):
 
     # Download the spreadsheet from google docs into memory
     sheet = download_sheet(start_time, sheet_url, s3_bucket, timedelta_analysis, s3_client, logger)
-
-    row_count = sheet.shape[0]
-    col_count = int(sheet.shape[1])
-    sheet_sanity_check = json.dumps(
-      {
-        "size": f"{sheet.size} bytes",
-        "rows": row_count,
-        "columns": col_count,
-        "header": sheet.iloc[3, :].to_dict(orient="records"),
-        "tail": sheet.tail(1).astype(str).to_dict(orient="records"),
-      })
+    sheet_sanity_check = extract_and_transform_to_tsv(start_time, sheet, s3_bucket, timedelta_analysis, s3_client, logger)
 
     # log timedeltas for performance monitoring
     logger.info("finalized extract transform loading operation")
