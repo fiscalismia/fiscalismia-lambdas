@@ -74,8 +74,6 @@ def lambda_handler(event, context):
     sheet_url = secret["GOOGLE_SHEETS_URL"]
     # Verify spreadsheet url is not malformed
     # Download the spreadsheet from google docs into memory
-    sheet_url = clean_sheet_url(sheet_url, logger, "xlsx")
-    sheet = download_xlsx(start_time, sheet_url, s3_bucket, timedelta_analysis, s3_client, logger)
     sheet_url = clean_sheet_url(sheet_url, logger, "csv")
     sheet = download_csv(start_time, sheet_url, s3_bucket, timedelta_analysis, s3_client, logger)
     sheet_sanity_check = extract_and_transform_to_tsv(start_time, sheet, s3_bucket, timedelta_analysis, s3_client, logger)
