@@ -90,7 +90,7 @@ def lambda_handler(event, context):
     log_time_analysis(timedelta_analysis, logger)
     return {
       "statusCode": 202,
-      "body": json.dumps(list(s3_presigned_urls))
+      "body": { "presigned_urls": json.dumps(list(s3_presigned_urls)) }
     }
   except RuntimeError as e:
     logger.error("Runtime error during ETL", extra={"error": str(e)})
