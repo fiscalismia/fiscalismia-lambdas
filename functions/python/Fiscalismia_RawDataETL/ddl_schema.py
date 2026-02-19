@@ -88,20 +88,19 @@ TABLE_INVESTMENTS = {
 }
 
 # ── TABLE_INCOME ──────────────────────────────────────────────────────────────
-# Source: columns AJ:AN  (iloc 35–39, slice(35, 40))
+# Source: columns AJ:AM  (iloc 35–38, slice(35, 39))
 # Multi-section: embedded "Date: X - Y" rows separate income periods.
 # Same extraction pattern as TABLE_FIXED_COSTS.
 TABLE_INCOME = {
-    "col_slice": slice(35, 40),
+    "col_slice": slice(35, 39),
     "col_names": [
         "description",
         "type",
         "monthly_interval",
         "value",
-        "monthly_revenue",
     ],
     "derived_col_names": ["effective_date", "expiration_date"],
-    "skip_markers": {"description", "SUM", "border"},
+    "skip_markers": {"monthly revenue", "description", "SUM", "border"},
     "date_marker": "Date:",
     "date_value_col_offset": 1,
 }
