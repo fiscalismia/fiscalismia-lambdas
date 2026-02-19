@@ -4,6 +4,7 @@ import boto3
 import time
 from aws_lambda_powertools import Logger
 from aws_lambda_powertools.utilities import parameters
+from botocore.client import Config
 from download_xlsx import download_xlsx
 from download_csv import download_csv
 from clean_sheet_url import clean_sheet_url
@@ -11,7 +12,7 @@ from timedelta_analysis import add_time_analysis_entry, log_time_analysis
 from extract_transform import extract_and_transform_to_tsv
 from datetime import datetime
 import zoneinfo
-s3_client = boto3.client('s3')
+s3_client = boto3.client('s3', config=Config(signature_version='s3v4'))
 s3_bucket = 'fiscalismia-raw-data-etl-storage'
 berlin_tz = zoneinfo.ZoneInfo("Europe/Berlin")
 timestamp = datetime.now(tz=berlin_tz).strftime("%Y-%m-%d_%H-%M-%S")

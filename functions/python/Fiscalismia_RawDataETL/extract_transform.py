@@ -134,7 +134,7 @@ def extract_and_transform_to_tsv(
     s3_object_uri = f"{s3_bucket}/{s3_key}"
     logger.debug(f"TSV persisted to s3://{s3_object_uri}")
     url = s3_client.generate_presigned_url(
-      ClientMethod='put_object',
+      ClientMethod='get_object',
       Params={
           'Bucket': s3_bucket,
           'Key': s3_key
