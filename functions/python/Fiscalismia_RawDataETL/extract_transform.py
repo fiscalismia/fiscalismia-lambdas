@@ -53,6 +53,7 @@ def _extract_multisection_table(sheet: pd.DataFrame, table_def: dict) -> pd.Data
   current_effective = None
   current_expiration = None
 
+  # INFO: itertuples might be a more performant operation https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.itertuples.html#pandas.DataFrame.itertuples
   for _, row in raw.iterrows():
     first_val = str(row.iloc[0]).strip()
 
@@ -120,7 +121,7 @@ def extract_and_transform_to_tsv(
     "header": sheet.iloc[HEADER_ROW, :].to_dict(),
     "tail": sheet.tail(1).astype(str).to_dict(orient="records"),
   })
-  logger.info("Running sanity check on Finance sheet", extra={"sanity_check": debug_output})
+  logger.debug("Running sanity check on Finance sheet", extra={"sanity_check": debug_output})
 
   tables = load_tables_from_sheet(sheet)
   for table_name, df in tables.items():

@@ -76,14 +76,14 @@ def lambda_handler(event, context):
     # Download the spreadsheet from google docs into memory
     sheet_url = clean_sheet_url(sheet_url, logger, "csv")
     sheet = download_csv(start_time, sheet_url, s3_bucket, timedelta_analysis, s3_client, logger)
-    sheet_sanity_check = extract_and_transform_to_tsv(start_time, sheet, s3_bucket, timedelta_analysis, s3_client, logger)
+    tables = extract_and_transform_to_tsv(start_time, sheet, s3_bucket, timedelta_analysis, s3_client, logger)
 
     # log timedeltas for performance monitoring
     logger.info("finalized extract transform loading operation")
     log_time_analysis(timedelta_analysis, logger)
     return {
       "statusCode": 200,
-      "body": sheet_sanity_check
+      "body": list(tables.keys()).to_dict()
     }
   except RuntimeError as e:
     logger.error("Runtime error during ETL", extra={"error": str(e)})
