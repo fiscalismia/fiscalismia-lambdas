@@ -6,7 +6,7 @@ import requests # not in aws runtime
 from datetime import datetime
 import zoneinfo
 
-def download_sheet(
+def download_xlsx(
       start_time: int,
       sheet_url: str,
       s3_bucket: str,
