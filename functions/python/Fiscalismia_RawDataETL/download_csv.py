@@ -16,7 +16,7 @@ def download_csv(
     """
     Queries Google Sheets via HTTP Request to download a CSV export into memory.
     - Persists sheet with timestamp to s3 into s3://fiscalismia-raw-data-etl-storage/tmp/
-    - Uses pandas with pyarrow engine for fast multithreaded parsing
+    - Uses pandas with c engine for
     - Returns the parsed DataFrame
     """
     # Download the spreadsheet from google docs into memory
@@ -47,7 +47,8 @@ def download_csv(
         header=None,      # no header row — treat all rows as data
         na_filter=False,  # skip NA detection for performance
         dtype=str,        # preserve all raw cell values as strings
-        engine="pyarrow", # multithreaded fast parser
+        engine="c",       # pyarrow engine is too large of a dependency
+        low_memory=False  # Internally process the file in chunks, resulting in lower memory use while parsing
     )
     add_time_analysis_entry(timedelta_analysis, start_time, "loaded CSV into memory via pyarrow")
     logger.debug(f"Loaded CSV into memory with pandas pyarrow engine. Shape: {csv.shape}")
