@@ -22,7 +22,7 @@ def download_csv(
     response = requests.get(sheet_url, stream=True, timeout=(3, 10)) # (3s connect timeout, 10s read timeout)
     if response.status_code != 200:
       raise RuntimeError(f"Failed to download the sheet. HTTP status: {response.status_code}")
-    add_time_analysis_entry(timedelta_analysis, start_time, "request CSV via URL")
+    add_time_analysis_entry(timedelta_analysis, start_time, "request CSV file via URL")
 
     raw_bytes = response.content
     s3_buffer = BytesIO(raw_bytes)
@@ -30,10 +30,10 @@ def download_csv(
 
     # Persist raw bytes to S3 as timestamped backup
     s3_key = f"tmp/{timestamp}-Fiscalismia-Datasource.csv"
-    add_time_analysis_entry(timedelta_analysis, start_time, "load sheet into memory temp file")
+    add_time_analysis_entry(timedelta_analysis, start_time, "load CSV file into memory")
     s3_client.upload_fileobj(s3_buffer, s3_bucket, s3_key)
     logger.debug(f"CSV persisted to s3://{s3_bucket}/{s3_key}")
-    add_time_analysis_entry(timedelta_analysis, start_time, "persist temp file to s3")
+    add_time_analysis_entry(timedelta_analysis, start_time, "persist CSV file to s3 /tmp")
 
     # Parse CSV into DataFrame via pyarrow engine
     # See https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html
@@ -47,6 +47,6 @@ def download_csv(
         engine="c",       # pyarrow engine is too large of a dependency
         low_memory=False  # Internally process the file in chunks, resulting in lower memory use while parsing
     )
-    add_time_analysis_entry(timedelta_analysis, start_time, "loaded CSV into memory via C engine")
+    add_time_analysis_entry(timedelta_analysis, start_time, "read CSV via pandas C engine")
     logger.debug(f"Loaded CSV into memory with pandas pyarrow engine. Shape: {csv.shape}")
     return csv
