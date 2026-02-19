@@ -67,7 +67,6 @@ TABLE_FIXED_COSTS = {
 
 # ── TABLE_INVESTMENTS ─────────────────────────────────────────────────────────
 # Source: columns Q:AB  (iloc 16–27, slice(16, 28))
-# Largely contiguous; no embedded date-range sub-sections.
 TABLE_INVESTMENTS = {
     "col_slice": slice(16, 28),
     "col_names": [
@@ -90,7 +89,6 @@ TABLE_INVESTMENTS = {
 # ── TABLE_INCOME ──────────────────────────────────────────────────────────────
 # Source: columns AJ:AM  (iloc 35–38, slice(35, 39))
 # Multi-section: embedded "Date: X - Y" rows separate income periods.
-# Same extraction pattern as TABLE_FIXED_COSTS.
 TABLE_INCOME = {
     "col_slice": slice(35, 39),
     "col_names": [
@@ -107,7 +105,6 @@ TABLE_INCOME = {
 
 # ── TABLE_NEW_FOOD_ITEMS ──────────────────────────────────────────────────────
 # Source: columns AP:AW  (iloc 41–48, slice(41, 49))
-# Single contiguous block; no sub-sections.
 TABLE_NEW_FOOD_ITEMS = {
     "col_slice": slice(41, 49),
     "col_names": [
@@ -121,13 +118,4 @@ TABLE_NEW_FOOD_ITEMS = {
         "last_update",
     ],
     "skip_markers": {"food_item", "[100 grams]", "border"},
-}
-
-# ── Registry ──────────────────────────────────────────────────────────────────
-ALL_TABLES = {
-    "variable_expenses": TABLE_VAR_EXPENSES,
-    "fixed_costs":       TABLE_FIXED_COSTS,
-    "investments":       TABLE_INVESTMENTS,
-    "income":            TABLE_INCOME,
-    "food_items":        TABLE_NEW_FOOD_ITEMS,
 }
