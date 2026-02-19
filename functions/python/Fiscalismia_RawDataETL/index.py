@@ -87,14 +87,6 @@ def lambda_handler(event, context):
       sheet_url = sheet_url.split("/pubhtml")[0] + "/pub?output=xlsx"
 
     # Download the spreadsheet from google docs into memory
-    response = requests.get(sheet_url, stream=True, timeout=(3, 10)) # (3s connect timeout, 10s read timeout)
-    add_time_analysis_entry(timedelta_analysis, start_time, "request spreadsheet via URL")
-    if response.status_code != 200:
-      return {
-        "statusCode": 500,
-        "body": json.dumps({"error": "Failed to download the sheet"})
-      }
-
     workbook = download_sheet(start_time, sheet_url, s3_bucket, timedelta_analysis, s3_client, logger)
     sheet_names = workbook.sheetnames
 
@@ -106,8 +98,14 @@ def lambda_handler(event, context):
       "statusCode": 200,
       "body": json.dumps({"sheets": sheet_names})
     }
-
+  except RuntimeError as e:
+    logger.error("Runtime error during ETL", extra={"error": str(e)})
+    return {
+      "statusCode": 500,
+      "body": json.dumps({"error": str(e)})
+    }
   except Exception as e:
+    logger.error("Unexpected error during ETL", extra={"error": str(e)})
     return {
         "statusCode": 500,
         "body": json.dumps({"error": str(e)})

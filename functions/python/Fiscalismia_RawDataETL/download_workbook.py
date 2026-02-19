@@ -17,6 +17,8 @@ def download_sheet(
 ):
     # Download the spreadsheet from google docs into memory
     response = requests.get(sheet_url, stream=True, timeout=(3, 10)) # (3s connect timeout, 10s read timeout)
+    if response.status_code != 200:
+      raise RuntimeError(f"Failed to download the sheet. HTTP status: {response.status_code}")
     add_time_analysis_entry(timedelta_analysis, start_time, "request spreadsheet via URL")
     if response.status_code != 200:
       return {
