@@ -124,14 +124,14 @@ def extract_and_transform_to_tsv(
   logger.debug("Running sanity check on Finance sheet", extra={"sanity_check": debug_output})
 
   tables = load_tables_from_sheet(sheet)
-  s3_object_uris = []
+  s3_object_uris: list[str] = []
   for table_name, df in tables.items():
     file_name = f"{timestamp}-{table_name}.tsv"
     s3_key = f"transformed/{file_name}"
     logger.debug(f"Extracted table '{table_name}'", extra={"shape": str(df.shape)})
     s3_buffer = BytesIO(df.to_csv(sep="\t", index=False).encode("utf-8"))
     s3_client.upload_fileobj(s3_buffer, s3_bucket, s3_key)
-    s3_object_uri = {s3_bucket}/{s3_key}
+    s3_object_uri = f"{s3_bucket}/{s3_key}"
     logger.info(f"TSV persisted to s3://{s3_object_uri}")
     s3_object_uris.append(s3_object_uri)
 
