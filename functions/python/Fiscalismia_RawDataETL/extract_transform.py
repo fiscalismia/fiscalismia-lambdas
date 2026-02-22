@@ -12,26 +12,30 @@ from ddl_schema import (
   TABLE_NEW_FOOD_ITEMS,
 )
 
-
-def _extract_simple_table(sheet: pd.DataFrame, table_def: dict) -> pd.DataFrame:
+def _extract_trivial_table(sheet: pd.DataFrame, table_def: dict) -> pd.DataFrame:
   """
-  Extract a single contiguous table block using iloc.
+  - Extract a subtable slice using iloc.
+  - Drops all empty rows
+  - strips all values of extra whitespace
   Rows whose first column value appears in skip_markers are dropped.
   """
   col_slice = table_def["col_slice"]
   skip_markers = table_def.get("skip_markers", set())
 
-  data = sheet.iloc[DATA_START_ROW:, col_slice].copy()
-  data = data.dropna(how="all")
+  # Slices the sheet into subtable range
+  data_frame = sheet.iloc[DATA_START_ROW:, col_slice].copy()
+  # Drops all empty rows from dataframe
+  data_frame = data_frame.dropna(how="all")
 
-  # Drop sub-header / separator / total rows by checking the first column
-  first_col = data.iloc[:, 0].astype(str).str.strip()
-  data = data[~first_col.isin(skip_markers)]
-  data = data[first_col.notna() & (first_col != "") & (first_col != "nan")]
+  # Get all rows (:) from FIRST column (0) and perform vectorized strip operation
+  first_col = data_frame.iloc[:, 0].astype(str).str.strip()
+  # Drops any rows whose first column is marked to be skipped
+  data_frame = data_frame[~first_col.isin(skip_markers)]
+  # Drops any rows that are null, empty
+  data_frame = data_frame[first_col.notna() & (first_col != "")]
 
-  data.columns = table_def["col_names"]
-  return data.reset_index(drop=True)
-
+  data_frame.columns = table_def["col_names"]
+  return data_frame.reset_index(drop=True)
 
 def _extract_multisection_table(sheet: pd.DataFrame, table_def: dict) -> pd.DataFrame:
   """
@@ -83,21 +87,21 @@ def load_tables_from_sheet(sheet: pd.DataFrame) -> dict[str, pd.DataFrame]:
   Returns a dict keyed by table name:
     "variable_expenses", "fixed_costs", "investments", "income", "food_items"
   """
-  simple_tables = {
+  trivial_table = {
     "variable_expenses": TABLE_VAR_EXPENSES,
     "investments":       TABLE_INVESTMENTS,
     "food_items":        TABLE_NEW_FOOD_ITEMS,
   }
-  multisection_tables = {
+  multisection_table = {
     "fixed_costs": TABLE_FIXED_COSTS,
     "income":      TABLE_INCOME,
   }
 
   result = {}
-  for name, table_def in simple_tables.items():
-    result[name] = _extract_simple_table(sheet, table_def)
+  for name, table_def in trivial_table.items():
+    result[name] = _extract_trivial_table(sheet, table_def)
 
-  for name, table_def in multisection_tables.items():
+  for name, table_def in multisection_table.items():
     result[name] = _extract_multisection_table(sheet, table_def)
 
   return result
@@ -110,7 +114,15 @@ def extract_and_transform_to_tsv(
   timedelta_analysis: list[str],
   s3_client,
   logger
-):
+) -> list[str]:
+  """
+  Extracts subtable ranges from main finance sheet, serializing each
+  as a TSV file, uploads them to the specified S3 bucket under the
+  ``transformed/`` prefix, and returns short-lived presigned URLs.
+
+  Returns:
+      A list of presigned S3 URLs (one per extracted table)
+  """
   row_count = sheet.shape[0]
   col_count = int(sheet.shape[1])
   debug_output = json.dumps(

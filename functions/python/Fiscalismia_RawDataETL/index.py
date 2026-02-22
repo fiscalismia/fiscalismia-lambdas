@@ -80,9 +80,10 @@ def lambda_handler(event, context):
     )
     sheet_url = secret["GOOGLE_SHEETS_URL"]
     # Verify spreadsheet url is not malformed
-    # Download the spreadsheet from google docs into memory
     sheet_url = clean_sheet_url(sheet_url, logger, "csv")
+    # Download the spreadsheet from google docs into memory
     sheet = download_csv(start_time, timestamp, sheet_url, s3_bucket, timedelta_analysis, s3_client, logger)
+    # extract tsv files from tables nested within sheet with pandas dataframe iloc functionality
     s3_presigned_urls = extract_and_transform_to_tsv(start_time, timestamp, sheet, s3_bucket, timedelta_analysis, s3_client, logger)
 
     # log timedeltas for performance monitoring
