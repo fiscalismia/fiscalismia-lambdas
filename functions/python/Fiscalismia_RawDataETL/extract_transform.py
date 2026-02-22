@@ -20,9 +20,9 @@ def _extract_trivial_table(sheet: pd.DataFrame, table_def: dict) -> pd.DataFrame
   Rows whose first column value appears in skip_markers are dropped.
   """
   col_slice = table_def["col_slice"]
-  skip_markers = table_def.get("skip_markers", set())
+  skip_markers = table_def.get("skip_markers", None)
 
-  # Slices the sheet into subtable range
+  # Slices the sheet into its subtable range
   data_frame = sheet.iloc[DATA_START_ROW:, col_slice].copy()
   # Drops all empty rows from dataframe
   data_frame = data_frame.dropna(how="all")
@@ -37,28 +37,30 @@ def _extract_trivial_table(sheet: pd.DataFrame, table_def: dict) -> pd.DataFrame
   data_frame.columns = table_def["col_names"]
   return data_frame.reset_index(drop=True)
 
-def _extract_multisection_table(sheet: pd.DataFrame, table_def: dict) -> pd.DataFrame:
+def _extract_multisection_table(sheet: pd.DataFrame, table_def: dict, logger) -> pd.DataFrame:
   """
-  Extract a multi-section table where "Date: X - Y" group-header rows are
-  embedded in the data area (used by TABLE_FIXED_COSTS and TABLE_INCOME).
+  Extract a multi-section table where "Date: DD.MM.YYYY - DD.MM.YYYY" group-headers are present
   The parsed date range is broadcast to every following data row as
   effective_date / expiration_date until the next Date row is encountered.
   """
   col_slice = table_def["col_slice"]
-  skip_markers = table_def.get("skip_markers", set())
+  skip_markers = table_def.get("skip_markers", None)
   date_marker = table_def["date_marker"]
   date_col_offset = table_def["date_value_col_offset"]
 
-  raw = sheet.iloc[DATA_START_ROW:, col_slice].copy()
-  raw = raw.dropna(how="all")
-  raw = raw.reset_index(drop=True)
+  # Slices the sheet into its subtable range
+  raw_data = sheet.iloc[DATA_START_ROW:, col_slice].copy()
+  # Drops all empty rows from dataframe
+  raw_data = raw_data.dropna(how="all")
+  # resets indices to 0 and drops stale references to any dropped rows
+  raw_data = raw_data.reset_index(drop=True)
 
   records = []
   current_effective = None
   current_expiration = None
 
   # INFO: itertuples might be a more performant operation https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.itertuples.html#pandas.DataFrame.itertuples
-  for _, row in raw.iterrows():
+  for _, row in raw_data.iterrows():
     first_val = str(row.iloc[0]).strip()
 
     if first_val == date_marker:
@@ -67,6 +69,7 @@ def _extract_multisection_table(sheet: pd.DataFrame, table_def: dict) -> pd.Data
       parts = [p.strip() for p in date_string.split("-", 1)]
       current_effective = parts[0] if len(parts) > 0 else None
       current_expiration = parts[1] if len(parts) > 1 else None
+      logger.info(f"Date String in col slice {col_slice} with effective {current_effective} and expiration {current_expiration}")
       continue
 
     if first_val in skip_markers or first_val in {"", "nan"}:
@@ -79,7 +82,7 @@ def _extract_multisection_table(sheet: pd.DataFrame, table_def: dict) -> pd.Data
   return pd.DataFrame(records, columns=output_cols)
 
 
-def load_tables_from_sheet(sheet: pd.DataFrame) -> dict[str, pd.DataFrame]:
+def load_tables_from_sheet(sheet: pd.DataFrame, logger) -> dict[str, pd.DataFrame]:
   """
   Extract all five Finance tables from the raw sheet using iloc-based column
   slices defined in ddl_schema.py.
@@ -102,7 +105,7 @@ def load_tables_from_sheet(sheet: pd.DataFrame) -> dict[str, pd.DataFrame]:
     result[name] = _extract_trivial_table(sheet, table_def)
 
   for name, table_def in multisection_table.items():
-    result[name] = _extract_multisection_table(sheet, table_def)
+    result[name] = _extract_multisection_table(sheet, table_def, logger)
 
   return result
 
@@ -135,7 +138,7 @@ def extract_and_transform_to_tsv(
   })
   logger.debug("Running sanity check on Finance sheet", extra={"sanity_check": debug_output})
 
-  tables = load_tables_from_sheet(sheet)
+  tables = load_tables_from_sheet(sheet, logger)
   s3_presigned_urls: list[str] = []
   for table_name, df in tables.items():
     file_name = f"{timestamp}-{table_name}.tsv"

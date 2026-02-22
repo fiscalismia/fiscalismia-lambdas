@@ -72,16 +72,9 @@ TABLE_NEW_FOOD_ITEMS = {
     "skip_markers": {"food_item", "[100 grams]", "border"},
 }
 
-# ── TABLE_FIXED_COSTS ─────────────────────────────────────────────────────────
+# Multi-section: multiple "Date: DD.MM.YYYY - DD.MM.YYYY" group headers are embedded
+# The date range for each group becomes effective_date / expiration_date.
 # Source: columns K:O  (iloc 10–14, slice(10, 15))
-# Multi-section: multiple "Date: X - Y" group headers are embedded in the data
-# area. The date range for each group becomes effective_date / expiration_date.
-#
-# Row types (identified by col 0 relative = K):
-#   "Date:"    → date-range header; col 1 relative (L) holds "DD.MM.YYYY - DD.MM.YYYY"
-#   "category" → sub-header row  → skip
-#   "SUM"      → totals row      → skip
-#   other      → actual data row
 TABLE_FIXED_COSTS = {
     "col_slice": slice(10, 15),
     "col_names": [
@@ -93,15 +86,16 @@ TABLE_FIXED_COSTS = {
     ],
     # effective_date and expiration_date are derived from the embedded "Date:" rows
     "derived_col_names": ["effective_date", "expiration_date"],
+    # Skip rows if first column contains these
     "skip_markers": {"category", "SUM", "border"},
     "date_marker": "Date:",
     # Offset (relative to col_slice start) where the date string lives on a date row
     "date_value_col_offset": 1,
 }
 
-# ── TABLE_INCOME ──────────────────────────────────────────────────────────────
+# Multi-section: multiple "Date: DD.MM.YYYY - DD.MM.YYYY" group headers are embedded
+# The date range for each group becomes effective_date / expiration_date.
 # Source: columns AJ:AM  (iloc 35–38, slice(35, 39))
-# Multi-section: embedded "Date: X - Y" rows separate income periods.
 TABLE_INCOME = {
     "col_slice": slice(35, 39),
     "col_names": [
@@ -110,8 +104,11 @@ TABLE_INCOME = {
         "monthly_interval",
         "value",
     ],
+    # effective_date and expiration_date are derived from the embedded "Date:" rows
     "derived_col_names": ["effective_date", "expiration_date"],
-    "skip_markers": {"monthly revenue", "description", "SUM", "border"},
+    # Skip rows if first column contains these
+    "skip_markers": {"description", "border"},
     "date_marker": "Date:",
+    # Offset (relative to col_slice start) where the date string lives on a date row
     "date_value_col_offset": 1,
 }
