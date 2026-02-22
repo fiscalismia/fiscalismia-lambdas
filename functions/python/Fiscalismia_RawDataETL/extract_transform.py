@@ -69,7 +69,7 @@ def _extract_multisection_table(sheet: pd.DataFrame, table_def: dict, logger) ->
       parts = [p.strip() for p in date_string.split("-", 1)]
       current_effective = parts[0] if len(parts) > 0 else None
       current_expiration = parts[1] if len(parts) > 1 else None
-      logger.info(f"Date String in col slice {col_slice} with effective {current_effective} and expiration {current_expiration}")
+      logger.debug(f"Date String in col slice {col_slice} with effective {current_effective} and expiration {current_expiration}")
       continue
 
     if first_val in skip_markers or first_val in {"", "nan"}:
