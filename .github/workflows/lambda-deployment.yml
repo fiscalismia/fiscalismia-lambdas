@@ -20,9 +20,6 @@ on:
     branches:
       - main
       - pipeline_testing
-  pull_request:
-    branches:
-      - release
   workflow_dispatch: # manual triggering
     inputs:
       layer_name:
