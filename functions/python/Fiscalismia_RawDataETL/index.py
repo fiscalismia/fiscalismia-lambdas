@@ -24,11 +24,11 @@ def authenticate_request(body, headers):
 
   logger.info("Request received", extra={"ip": requestIp})
 
-  secret = parameters.get_secret(
-    "arn:aws:secretsmanager:eu-central-1:010928217051:secret:/api/fiscalismia/API_GW_SECRET_KEY-4AjIFN",
-    transform="json"
+  # query SecureString from AWS Parameter Store
+  secret_api_key = parameters.get_parameter(
+      "/api/fiscalismia/API_GW_SECRET_KEY",
+      decrypt=True
   )
-  secret_api_key = secret.get("API_GW_SECRET_KEY", None)
   # block access if payload is sent
   if body or contentLength > 0:
     logger.error(f"No payload expected. Request body should be empty. ContentLength: {contentLength}")
@@ -74,11 +74,11 @@ def lambda_handler(event, context):
     return auth_response
   add_time_analysis_entry(timedelta_analysis, start_time, "request authentication")
   try:
-    secret = parameters.get_secret(
-      "arn:aws:secretsmanager:eu-central-1:010928217051:secret:/google/sheets/fiscalismia-datasource-url-k38OGm",
-      transform="json"
+    # query SecureString from AWS Parameter Store
+    sheet_url = parameters.get_parameter(
+        "/google/sheets/fiscalismia-datasource-url",
+        decrypt=True
     )
-    sheet_url = secret["GOOGLE_SHEETS_URL"]
     # Verify spreadsheet url is not malformed
     sheet_url = clean_sheet_url(sheet_url, logger, "csv")
     # Download the spreadsheet from google docs into memory
