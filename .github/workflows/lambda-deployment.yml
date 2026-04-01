@@ -235,7 +235,7 @@ jobs:
         bash create_function_archives.sh ${PROGRAMMING_LANG}
 
     - name: Setup NodeJS
-      uses: actions/setup-node@v6.1.0
+      uses: actions/setup-node@v6.3.0
       # https://github.com/actions/setup-node
       with:
         node-version: 22

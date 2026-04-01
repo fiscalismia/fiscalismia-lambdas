@@ -126,7 +126,7 @@ elif [ "${PROGRAMMING_LANG}" == "typescript" ]; then
   LAYER_DIR=\"nodejs/${NODE_V}\"
   mkdir -p \${LAYER_DIR}
   cp package.json \${LAYER_DIR}
-  npm install --prefix \${LAYER_DIR}
+  npm ci --ignore-scripts \${LAYER_DIR}
   echo -e \"${BLUE_BOLD}################## INSTALLED THE FOLLOWING PACKAGES ############${NC}\"
   ls -hla \${LAYER_DIR}/node_modules/
   "
