@@ -125,12 +125,14 @@ elif [ "${PROGRAMMING_LANG}" == "typescript" ]; then
   echo -e \"${BLUE_BOLD}################## DEPENDENCY INSTALLATION BEGIN ###############${NC}\"
   LAYER_DIR=\"nodejs/${NODE_V}\"
   mkdir -p \${LAYER_DIR}
-  echo created directory \${LAYER_DIR}
+  echo -e \"${BLUE}created directory \${LAYER_DIR} ${NC}\"
   cp package.json package-lock.json .npmrc \${LAYER_DIR}
-  echo npm dependency and config files. running npm ci...
-  npm ci --ignore-scripts --allow-git=none \${LAYER_DIR}
+  echo -e \"${BLUE}copied npm dependency and config files. running npm ci. ${NC}\"
+  cd \${LAYER_DIR}
+  ls -hlas
+  npm ci --ignore-scripts --allow-git=none
   echo -e \"${BLUE_BOLD}################## INSTALLED THE FOLLOWING PACKAGES ############${NC}\"
-  ls -hla \${LAYER_DIR}/node_modules/
+  ls -hla ./node_modules/
   "
 
   # create zip archive
