@@ -50,11 +50,12 @@ cd ${FUNCTION_DIR}
 ##### PYTHON FUNCTIONS #####
 if [ "${PROGRAMMING_LANG}" == "python" ]; then
   for folder in */; do
-    cd ${FUNCTION_DIR}/${folder}
+    cd "${FUNCTION_DIR}${folder}"
     folder_name=$(echo "${folder}" | sed 's/\/$//')
     zip_name="${folder_name}.zip"
+    echo -e "${BLUE}Zipping python function code for ${FUNCTION_DIR}${folder} ${NC}"
     zip -q ${zip_name} *.py
-    mv ${zip_name} ${FUNCTION_DIR}/
+    mv ${zip_name} ${FUNCTION_DIR}
   done
 ##### TYPERSCRIPT FUNCTIONS #####
 elif [ "${PROGRAMMING_LANG}" == "typescript" ]; then
@@ -65,16 +66,20 @@ elif [ "${PROGRAMMING_LANG}" == "typescript" ]; then
   #   "postbuild": "cd dist && zip -r index.zip index.js*"
   # }
   for folder in */; do
-    cd ${FUNCTION_DIR}/${folder}
+    cd "${FUNCTION_DIR}${folder}"
     folder_name=$(echo "${folder}" | sed 's/\/$//')
     zip_name="${folder_name}.zip"
+    echo -e "${BLUE}Running npm ci from ${FUNCTION_DIR}${folder} ${NC}"
+    echo -e "${BLUE}With npm version $(npm --version) ${NC}"
     npm ci --ignore-scripts --allow-git=none
-    npm run build
+    # custom prebuild and postbuild must run as script
+    # the ignore-scripts flag is necessary solely for potentially vulnerable npm dependencies
+    npm run build --ignore-scripts=false
     echo "Moving dist/index.zip to ${FUNCTION_DIR}${zip_name}"
     mv dist/index.zip ${FUNCTION_DIR}${zip_name}
     rm -rf ./dist node_modules
   done
 fi
 
-echo -e "${GREEN_BOLD}==> Zipped functions persisted in ${FUNCTION_DIR}${NC}"
+echo -e "${GREEN_BOLD}==> Zipped functions persisted in ${FUNCTION_DIR} listed below:${NC}"
 ls -l ${FUNCTION_DIR} | grep .zip
