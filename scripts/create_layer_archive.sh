@@ -125,8 +125,8 @@ elif [ "${PROGRAMMING_LANG}" == "typescript" ]; then
   echo -e \"${BLUE_BOLD}################## DEPENDENCY INSTALLATION BEGIN ###############${NC}\"
   LAYER_DIR=\"nodejs/${NODE_V}\"
   mkdir -p \${LAYER_DIR}
-  cp package.json \${LAYER_DIR}
-  npm ci --ignore-scripts \${LAYER_DIR}
+  cp package.json package-lock.json .npmrc \${LAYER_DIR}
+  npm ci --ignore-scripts --allow-git=none \${LAYER_DIR}
   echo -e \"${BLUE_BOLD}################## INSTALLED THE FOLLOWING PACKAGES ############${NC}\"
   ls -hla \${LAYER_DIR}/node_modules/
   "

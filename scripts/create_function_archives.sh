@@ -68,7 +68,7 @@ elif [ "${PROGRAMMING_LANG}" == "typescript" ]; then
     cd ${FUNCTION_DIR}/${folder}
     folder_name=$(echo "${folder}" | sed 's/\/$//')
     zip_name="${folder_name}.zip"
-    npm ci --ignore-scripts
+    npm ci --ignore-scripts --allow-git=none
     npm run build
     echo "Moving dist/index.zip to ${FUNCTION_DIR}${zip_name}"
     mv dist/index.zip ${FUNCTION_DIR}${zip_name}
