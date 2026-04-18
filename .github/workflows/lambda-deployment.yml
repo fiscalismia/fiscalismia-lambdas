@@ -81,7 +81,7 @@ jobs:
 
     steps:
     - name: Checkout SCM
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6.0.2
       # https://github.com/actions/checkout
 
     - name: Build NodeJS Layer Fiscalismia_ImageProcessing_NodeJSDependencies
@@ -99,7 +99,7 @@ jobs:
         ls -hla
 
     - name: Upload Layer Archive Artifacts
-      uses: actions/upload-artifact@v5.0.0
+      uses: actions/upload-artifact@v7.0.1
       # https://github.com/actions/upload-artifact
       with:
         name: nodejs-layer-archives
@@ -117,7 +117,7 @@ jobs:
 
     steps:
     - name: Checkout SCM
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6.0.2
       # https://github.com/actions/checkout
 
     - name: Build Python Layer Fiscalismia_RawDataETL_PythonDependencies
@@ -149,7 +149,7 @@ jobs:
         ls -hla
 
     - name: Upload Layer Archive Artifacts
-      uses: actions/upload-artifact@v5.0.0
+      uses: actions/upload-artifact@v7.0.1
       # https://github.com/actions/upload-artifact
       with:
         name: python-layer-archives
@@ -173,7 +173,7 @@ jobs:
     steps:
     - name: Configure AWS Credentials with OIDC JWT Token for STS Access
       # See https://docs.github.com/en/actions/concepts/security/openid-connect
-      uses: aws-actions/configure-aws-credentials@v5.1.1
+      uses: aws-actions/configure-aws-credentials@v6.1.0
       # https://github.com/aws-actions/configure-aws-credentials
       with:
         role-to-assume: arn:aws:iam::010928217051:role/OpenID_Connect_GithubActions_LambdaPipeline
@@ -181,14 +181,14 @@ jobs:
         aws-region: ${{ vars.AWS_REGION }}
 
     - name: Download NodeJS Layer Archives
-      uses: actions/download-artifact@v7.0.0
+      uses: actions/download-artifact@v8.0.1
       # https://github.com/actions/download-artifact
       with:
         name: nodejs-layer-archives
         path: layers/
 
     - name: Download Python Layer Archives
-      uses: actions/download-artifact@v7.0.0
+      uses: actions/download-artifact@v8.0.1
       # https://github.com/actions/download-artifact
       with:
         name: python-layer-archives
@@ -223,7 +223,7 @@ jobs:
 
     steps:
     - name: Checkout SCM
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6.0.2
       # https://github.com/actions/checkout
 
     - name: Zip Python Lambda Functions
@@ -247,7 +247,7 @@ jobs:
         bash create_function_archives.sh ${PROGRAMMING_LANG}
 
     - name: Upload Python Lambda Function Archives
-      uses: actions/upload-artifact@v5.0.0
+      uses: actions/upload-artifact@v7.0.1
       # https://github.com/actions/upload-artifact
       with:
         name: python-function-archives
@@ -256,7 +256,7 @@ jobs:
           functions/python/*.zip
 
     - name: Upload TypeScript Lambda Function Archives
-      uses: actions/upload-artifact@v5.0.0
+      uses: actions/upload-artifact@v7.0.1
       # https://github.com/actions/upload-artifact
       with:
         name: typescript-function-archives
@@ -278,7 +278,7 @@ jobs:
     steps:
     - name: Configure AWS Credentials with OIDC JWT Token for STS Access
       # See https://docs.github.com/en/actions/concepts/security/openid-connect
-      uses: aws-actions/configure-aws-credentials@v5.1.1
+      uses: aws-actions/configure-aws-credentials@v6.1.0
       # https://github.com/aws-actions/configure-aws-credentials
       with:
         role-to-assume: arn:aws:iam::010928217051:role/OpenID_Connect_GithubActions_LambdaPipeline
@@ -286,14 +286,14 @@ jobs:
         aws-region: ${{ vars.AWS_REGION }}
 
     - name: Download Python Function Archives
-      uses: actions/download-artifact@v7.0.0
+      uses: actions/download-artifact@v8.0.1
       # https://github.com/actions/download-artifact
       with:
         name: python-function-archives
         path: functions/python/
 
     - name: Download TypeScript Function Archives
-      uses: actions/download-artifact@v7.0.0
+      uses: actions/download-artifact@v8.0.1
       # https://github.com/actions/download-artifact
       with:
         name: typescript-function-archives
@@ -346,7 +346,7 @@ jobs:
     steps:
     - name: Configure AWS Credentials with OIDC JWT Token for STS Access
       # See https://docs.github.com/en/actions/concepts/security/openid-connect
-      uses: aws-actions/configure-aws-credentials@v5.1.1
+      uses: aws-actions/configure-aws-credentials@v6.1.0
       # https://github.com/aws-actions/configure-aws-credentials
       with:
         role-to-assume: arn:aws:iam::010928217051:role/OpenID_Connect_GithubActions_LambdaPipeline
@@ -354,14 +354,14 @@ jobs:
         aws-region: ${{ vars.AWS_REGION }}
 
     - name: Download Python Function Archives
-      uses: actions/download-artifact@v7.0.0
+      uses: actions/download-artifact@v8.0.1
       # https://github.com/actions/download-artifact
       with:
         name: python-function-archives
         path: functions/python/
 
     - name: Download TypeScript Function Archives
-      uses: actions/download-artifact@v7.0.0
+      uses: actions/download-artifact@v8.0.1
       # https://github.com/actions/download-artifact
       with:
         name: typescript-function-archives
@@ -418,7 +418,7 @@ jobs:
     steps:
     - name: Configure AWS Credentials with OIDC JWT Token for STS Access
       # See https://docs.github.com/en/actions/concepts/security/openid-connect
-      uses: aws-actions/configure-aws-credentials@v5.1.1
+      uses: aws-actions/configure-aws-credentials@v6.1.0
       # https://github.com/aws-actions/configure-aws-credentials
       with:
         role-to-assume: arn:aws:iam::010928217051:role/OpenID_Connect_GithubActions_LambdaPipeline
@@ -426,14 +426,14 @@ jobs:
         aws-region: ${{ vars.AWS_REGION }}
 
     - name: Download NodeJS Layer Archives
-      uses: actions/download-artifact@v7.0.0
+      uses: actions/download-artifact@v8.0.1
       # https://github.com/actions/download-artifact
       with:
         name: nodejs-layer-archives
         path: layers/
 
     - name: Download Python Layer Archives
-      uses: actions/download-artifact@v7.0.0
+      uses: actions/download-artifact@v8.0.1
       # https://github.com/actions/download-artifact
       with:
         name: python-layer-archives
