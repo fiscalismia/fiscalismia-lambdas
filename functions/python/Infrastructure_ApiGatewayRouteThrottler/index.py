@@ -1,43 +1,78 @@
+# s3://fiscalismia-infrastructure/lambdas/infrastructure/python/Infrastructure_ApiGatewayRouteThrottler.zip
 import json
+import boto3
 import os
+from aws_lambda_powertools import Logger
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
-print('Loading function: Infrastructure_ApiGatewayRouteThrottler')
+# Read ENV Variables from Terraform
+REST_API_ID = os.environ.get('REST_API_ID')
+REST_API_STAGE = os.environ.get('REST_API_STAGE')
+REST_API_S3_IMG_DOWNSCALE_ROUTE = os.environ.get('REST_API_S3_IMG_DOWNSCALE_ROUTE')
+REST_API_RAW_DATA_ETL_ROUTE = os.environ.get('REST_API_RAW_DATA_ETL_ROUTE')
 
+logger = Logger(service="Infrastructure_ApiGatewayRouteThrottler")
 def lambda_handler(event, context):
     """
     Lambda function to handle API Gateway route throttling alerts.
     Triggered by SNS when throttling thresholds are exceeded.
     """
     function_name = context.function_name
-    request_id = context.request_id
+    request_id = context.aws_request_id
+    current_time = datetime.now(tz=ZoneInfo("Europe/Berlin"))
 
-    print(f"Function: {function_name} | Request ID: {request_id}")
-    print(f"Invoked at: {datetime.utcnow().isoformat()}")
+    logger.debug("Function invoked", extra={"function_name": function_name, "request_id": request_id, "invoked_at": current_time })
 
     # Extract SNS message
     try:
         if 'Records' in event and len(event['Records']) > 0:
             sns_message = event['Records'][0]['Sns']['Message']
-            print(f"SNS Message Received: {sns_message}")
+            sns_subject = event['Records'][0]['Sns']['Subject']
+            sns_timestamp = event['Records'][0]['Sns']['Timestamp']
+            sns_topic_arn = event['Records'][0]['Sns']['TopicArn']
 
-            # TODO: Implement your throttling logic here
-            # Example: Parse the message, identify the route, adjust rate limits
+            logger.info("SNS Message Received.", extra={"topic_arn": sns_topic_arn,  "sns_message": sns_message, "timestamp": sns_timestamp, "subject": sns_subject})
+
+            # Create API Gateway Client via boto3 sdk
+            # See https://awscli.amazonaws.com/v2/documentation/api/2.0.34/reference/apigatewayv2/index.html
+            client = boto3.client('apigatewayv2')
+
+            # Throttle S3 Route
+            response = client.update_stage(
+                ApiId=REST_API_ID,
+                StageName=REST_API_STAGE,
+                RouteSettings={
+                    REST_API_S3_IMG_DOWNSCALE_ROUTE: {
+                        'ThrottlingBurstLimit': 0,
+                        'ThrottlingRateLimit': 0
+                    },
+                    REST_API_RAW_DATA_ETL_ROUTE: {
+                        'ThrottlingBurstLimit': 0,
+                        'ThrottlingRateLimit': 0
+                    }
+                },
+            )
+            updated_route_settings = response.get("RouteSettings", None)
+            logger.debug("Throttled Routes.", extra={"RouteSettings": updated_route_settings})
 
             return {
                 "statusCode": 200,
                 "body": json.dumps({
-                    "message": "Route throttling processed successfully",
-                    "function": function_name,
-                    "sns_message": sns_message
+                    "status": "OK",
+                    "s3_route_settings": updated_route_settings.get(REST_API_S3_IMG_DOWNSCALE_ROUTE, None),
+                    "etl_route_settings": updated_route_settings.get(REST_API_RAW_DATA_ETL_ROUTE, None)
                 })
             }
         else:
-            print("No SNS records found in event")
+            logger.error("No SNS records found in event")
             return {
                 "statusCode": 400,
-                "body": json.dumps({"error": "Invalid event structure"})
+                "body": json.dumps({"error": "Invalid SNS event structure"})
             }
     except Exception as e:
-        print(f"Error processing event: {str(e)}")
-        raise
+        logger.error("Unexpected error during RouteThrottler", extra={"error": str(e)})
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"error": str(e)})
+        }

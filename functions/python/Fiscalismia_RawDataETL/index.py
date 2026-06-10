@@ -37,7 +37,7 @@ def authenticate_request(body, headers):
       "body": json.dumps({"message": f"No payload expected. Request body should be empty. ContentLength: {contentLength}"})
     }
   # block access if authorization header does not include the API TOKEN
-  if authorization == None or secret_api_key == None or authorization != secret_api_key:
+  if authorization is None or secret_api_key is None or authorization != secret_api_key:
     logger.error("Invalid Authorization header.")
     return {
       "statusCode": 403,
