@@ -5,12 +5,14 @@ import os
 from aws_lambda_powertools import Logger
 from datetime import datetime
 from zoneinfo import ZoneInfo
+from sns_utility import SnsWrapper
 
 # Read ENV Variables from Terraform
 REST_API_ID = os.environ.get('REST_API_ID')
 REST_API_STAGE = os.environ.get('REST_API_STAGE')
 REST_API_S3_IMG_DOWNSCALE_ROUTE = os.environ.get('REST_API_S3_IMG_DOWNSCALE_ROUTE')
 REST_API_RAW_DATA_ETL_ROUTE = os.environ.get('REST_API_RAW_DATA_ETL_ROUTE')
+SNS_TOPIC_ARN_NOTIFICATION_SENDER = os.environ.get('SNS_TOPIC_ARN_NOTIFICATION_SENDER')
 
 logger = Logger(service="Infrastructure_ApiGatewayRouteThrottler")
 def lambda_handler(event, context):
@@ -24,7 +26,7 @@ def lambda_handler(event, context):
 
     logger.debug("Function invoked", extra={"function_name": function_name, "request_id": request_id, "invoked_at": current_time })
 
-    # Extract SNS message
+    # Extract SNS message triggering the lambda
     try:
         if 'Records' in event and len(event['Records']) > 0:
             sns_message = event['Records'][0]['Sns']['Message']
@@ -56,13 +58,28 @@ def lambda_handler(event, context):
             updated_route_settings = response.get("RouteSettings", None)
             logger.debug("Throttled Routes.", extra={"RouteSettings": updated_route_settings})
 
-            return {
-                "statusCode": 200,
-                "body": json.dumps({
+            # Notify Admin via SNS Topic invoking a Notification Sender Lambda Function
+            sns_resource = boto3.resource("sns")
+            sns_wrapper = SnsWrapper(sns_resource)
+            topic = sns_resource.Topic(SNS_TOPIC_ARN_NOTIFICATION_SENDER)
+            attributes = {"test": "string", "bintest": b"binary"}
+            throttle_message = json.dumps({
                     "status": "OK",
                     "s3_route_settings": updated_route_settings.get(REST_API_S3_IMG_DOWNSCALE_ROUTE, None),
-                    "etl_route_settings": updated_route_settings.get(REST_API_RAW_DATA_ETL_ROUTE, None)
-                })
+                    "etl_route_settings": updated_route_settings.get(REST_API_RAW_DATA_ETL_ROUTE, None),
+            })
+            sns_response = sns_wrapper.publish_message(topic, throttle_message, attributes, logger)
+            logger.debug("Sent SNS message.", extra={"sns_response": sns_response})
+
+            result_message = json.dumps({
+                    "status": "OK",
+                    "s3_route_settings": updated_route_settings.get(REST_API_S3_IMG_DOWNSCALE_ROUTE, None),
+                    "etl_route_settings": updated_route_settings.get(REST_API_RAW_DATA_ETL_ROUTE, None),
+                    "sns_notification_response": sns_response
+            })
+            return {
+                "statusCode": 200,
+                "body": result_message
             }
         else:
             logger.error("No SNS records found in event")
