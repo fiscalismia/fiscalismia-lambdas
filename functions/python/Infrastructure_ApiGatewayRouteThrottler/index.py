@@ -13,7 +13,8 @@ REST_API_STAGE = os.environ.get('REST_API_STAGE')
 REST_API_S3_IMG_DOWNSCALE_ROUTE = os.environ.get('REST_API_S3_IMG_DOWNSCALE_ROUTE')
 REST_API_RAW_DATA_ETL_ROUTE = os.environ.get('REST_API_RAW_DATA_ETL_ROUTE')
 SNS_TOPIC_ARN_NOTIFICATION_SENDER = os.environ.get('SNS_TOPIC_ARN_NOTIFICATION_SENDER')
-
+POST_IMG_ROUTE_CLOUDWATCH_ALARM_NAME = os.environ.get('POST_IMG_ROUTE_CLOUDWATCH_ALARM_NAME')
+RAW_DATA_ETL_ROUTE_CLOUDWATCH_ALARM_NAME  = os.environ.get('RAW_DATA_ETL_ROUTE_CLOUDWATCH_ALARM_NAME')
 logger = Logger(service="Infrastructure_ApiGatewayRouteThrottler")
 def lambda_handler(event, context):
     """
@@ -40,47 +41,65 @@ def lambda_handler(event, context):
             # See https://awscli.amazonaws.com/v2/documentation/api/2.0.34/reference/apigatewayv2/index.html
             client = boto3.client('apigatewayv2')
 
-            # Throttle S3 Route
-            response = client.update_stage(
-                ApiId=REST_API_ID,
-                StageName=REST_API_STAGE,
-                RouteSettings={
-                    REST_API_S3_IMG_DOWNSCALE_ROUTE: {
+            throttled_route = None
+            throttle_message = None
+            is_invalid = False
+            if POST_IMG_ROUTE_CLOUDWATCH_ALARM_NAME in sns_subject:
+                throttled_route = REST_API_S3_IMG_DOWNSCALE_ROUTE
+            if RAW_DATA_ETL_ROUTE_CLOUDWATCH_ALARM_NAME in sns_subject:
+                throttled_route = REST_API_RAW_DATA_ETL_ROUTE
+            if throttled_route is not None:
+                # Throttle S3 Route on receiving valid Alarm via SNS Subject
+                response = client.update_stage(
+                    ApiId=REST_API_ID,
+                    StageName=REST_API_STAGE,
+                    RouteSettings={
+                    throttled_route: {
                         'ThrottlingBurstLimit': 0,
                         'ThrottlingRateLimit': 0
-                    },
-                    REST_API_RAW_DATA_ETL_ROUTE: {
-                        'ThrottlingBurstLimit': 0,
-                        'ThrottlingRateLimit': 0
+                        }
                     }
-                },
-            )
-            updated_route_settings = response.get("RouteSettings", None)
-            logger.debug("Throttled Routes.", extra={"RouteSettings": updated_route_settings})
-
+                )
+                updated_route_settings = response.get("RouteSettings", None)
+                logger.debug("Throttled Route .", extra={"RouteSettings": updated_route_settings})
+                throttle_message = {
+                    "status": "THROTTLED",
+                    "service": "Infrastructure_ApiGatewayRouteThrottler",
+                    "invoking_sns": sns_subject,
+                    "s3_route_settings": updated_route_settings.get(REST_API_S3_IMG_DOWNSCALE_ROUTE, None),
+                    "etl_route_settings": updated_route_settings.get(REST_API_RAW_DATA_ETL_ROUTE, None),
+                }
+            else:
+                is_invalid = True
+                error_msg = "Subject of invoking sns routine does not contain correct route_key"
+                logger.error(error_msg)
+                throttle_message = {
+                    "status": "INVALID",
+                    "service": "Infrastructure_ApiGatewayRouteThrottler",
+                    "invoking_sns": sns_subject,
+                    "s3_route_settings": "unchanged",
+                    "etl_route_settings": "unchanged",
+                }
             # Notify Admin via SNS Topic invoking a Notification Sender Lambda Function
             sns_resource = boto3.resource("sns")
             sns_wrapper = SnsWrapper(sns_resource)
             topic = sns_resource.Topic(SNS_TOPIC_ARN_NOTIFICATION_SENDER)
             attributes = {"test": "string", "bintest": b"binary"}
-            throttle_message = json.dumps({
-                    "status": "OK",
-                    "s3_route_settings": updated_route_settings.get(REST_API_S3_IMG_DOWNSCALE_ROUTE, None),
-                    "etl_route_settings": updated_route_settings.get(REST_API_RAW_DATA_ETL_ROUTE, None),
-            })
-            sns_response = sns_wrapper.publish_message(topic, throttle_message, attributes, logger)
+            sns_response = sns_wrapper.publish_message(topic, json.dumps(throttle_message), attributes, logger)
             logger.debug("Sent SNS message.", extra={"sns_response": sns_response})
 
-            result_message = json.dumps({
-                    "status": "OK",
-                    "s3_route_settings": updated_route_settings.get(REST_API_S3_IMG_DOWNSCALE_ROUTE, None),
-                    "etl_route_settings": updated_route_settings.get(REST_API_RAW_DATA_ETL_ROUTE, None),
-                    "sns_notification_response": sns_response
-            })
-            return {
-                "statusCode": 200,
-                "body": result_message
-            }
+            # Use Operator to merge these two dictionaries and return as result
+            result_message = json.dumps(throttle_message | {"sns_notification_response": sns_response})
+            if not is_invalid:
+                return {
+                    "statusCode": 200,
+                    "body": result_message
+                }
+            else:
+                return {
+                    "statusCode": 422,
+                    "body": result_message
+                }
         else:
             logger.error("No SNS records found in event")
             return {
