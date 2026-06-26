@@ -66,7 +66,6 @@ def lambda_handler(event, context):
                     "auto_destroy": auto_destroy,
                     "manual_action_required": True,
                     "status": "FORECAST_EXCEEDED",
-                    "target": "None",
                     "invoking_sns": sns_subject,
                     "alarm_amount": alarm_amount,
                 }
