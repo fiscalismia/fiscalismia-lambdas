@@ -20,7 +20,7 @@ class SnsWrapper:
         :param topic: The topic to publish to.
         :param message: The message to publish.
         :param attributes: The key-value attributes to attach to the message. Values
-          must be either `str` or `bytes`.
+            must be either `str` or `bytes`.
         :return: The ID of the message.
         """
         try:
