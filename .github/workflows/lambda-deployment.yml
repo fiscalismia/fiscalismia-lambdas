@@ -16,10 +16,6 @@ env: # Global Environment variables for the entire pipeline
   PYTHON_INFRA_FUNCTION_NAME_TF_DESTROYER: Infrastructure_TerraformDestroyTrigger
 
 on:
-  push:
-    branches:
-      - main
-      - pipeline_testing
   workflow_dispatch: # manual triggering
     inputs:
       layer_name:
