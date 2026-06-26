@@ -100,6 +100,13 @@ if [ "${PROGRAMMING_LANG}" == "python" ]; then
   pip install --quiet -r ./requirements.txt -t ./python/lib/${PYTHON_V}/site-packages/
   echo -e \"${BLUE_BOLD}################## INSTALLED THE FOLLOWING PACKAGES ############${NC}\"
   pip list --path ./python/lib/${PYTHON_V}/site-packages/
+  if [ -d ./python ];
+    then
+      echo -e \"${BLUE_BOLD}################## LISTING LAYER UTILITY CODE ###############${NC}\"
+      ls -hlas ./python/ | grep '.py'
+    else 
+      echo -e \"${YELLOW}####### NO LAYER UTILITY CODE PRESENT ########${NC}\"
+  fi
   "
 
   # create zip archive
