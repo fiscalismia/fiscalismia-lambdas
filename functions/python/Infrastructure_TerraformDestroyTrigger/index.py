@@ -1,53 +1,120 @@
+# s3://fiscalismia-infrastructure/lambdas/infrastructure/python/Infrastructure_TerraformDestroyTrigger.zip
 import json
+import boto3
 import os
+import re
 from datetime import datetime
+from zoneinfo import ZoneInfo
+from aws_lambda_powertools import Logger
+from sns_utility import SnsWrapper
 
-print('Loading function: Infrastructure_TerraformDestroyTrigger')
-
+# Read ENV Variables from Terraform
+SNS_TOPIC_ARN_NOTIFICATION_SENDER = os.environ.get('SNS_TOPIC_ARN_NOTIFICATION_SENDER')
+COST_BUDGET_ALARM_TOTAL_ACTUAL_NAME = os.environ.get('COST_BUDGET_ALARM_TOTAL_ACTUAL_NAME')
+COST_BUDGET_ALARM_TOTAL_FORECAST_NAME  = os.environ.get('COST_BUDGET_ALARM_TOTAL_FORECAST_NAME')
+logger = Logger(service="Infrastructure_TerraformDestroyTrigger")
 def lambda_handler(event, context):
     """
     Lambda function to trigger infrastructure teardown.
     Triggered by SNS when budget limits are exceeded.
+    2 Cases:
+        - NOTIFICATION Cost forecast exceeds budget notification_type = "FORECASTED"
+        - TEARDOWN: Costs exceed 80% of budget -> notification_type = "ACTUAL"
     WARNING: This function initiates destruction of infrastructure resources.
     """
     function_name = context.function_name
-    request_id = context.request_id
+    request_id = context.aws_request_id
+    current_time = datetime.now(tz=ZoneInfo("Europe/Berlin"))
 
-    print(f"Function: {function_name} | Request ID: {request_id}")
-    print(f"Invoked at: {datetime.utcnow().isoformat()}")
-    print("=" * 60)
-    print("WARNING: INFRASTRUCTURE TEARDOWN TRIGGER")
-    print("=" * 60)
+    logger.debug("Function invoked", extra={"function_name": function_name, "request_id": request_id, "invoked_at": current_time })
 
     # Extract SNS message
     try:
         if 'Records' in event and len(event['Records']) > 0:
             sns_message = event['Records'][0]['Sns']['Message']
-            print(f"Budget Alert Message: {sns_message}")
+            sns_subject = event['Records'][0]['Sns']['Subject']
+            sns_timestamp = event['Records'][0]['Sns']['Timestamp']
+            sns_topic_arn = event['Records'][0]['Sns']['TopicArn']
 
-            # TODO: Implement your teardown logic here
-            # Example actions:
-            # 1. Verify the budget alert is legitimate
-            # 2. Send final notifications to administrators
-            # 3. Trigger Terraform destroy via AWS Systems Manager, CodeBuild, or similar
-            # 4. Log the teardown event to S3 or CloudWatch
+            logger.info("SNS Message Received.", extra={"topic_arn": sns_topic_arn,  "sns_message": sns_message, "timestamp": sns_timestamp, "subject": sns_subject})
 
-            print("TEARDOWN LOGIC WOULD BE EXECUTED HERE")
-            return {
-                "statusCode": 200,
-                "body": json.dumps({
-                    "message": "Teardown trigger processed",
-                    "function": function_name,
-                    "alert_message": sns_message,
-                    "action_taken": "Logged for review (actual teardown not yet implemented)"
-                })
-            }
+            is_match: bool = False
+            auto_destroy: bool = False
+            user_message = None
+            alarm_amount = None
+            
+            # Pattern to extract the forecasted / actual amount from cost alarm
+            pattern = r"((?:FORECASTED|ACTUAL) Amount:\s*\$\d+(?:\.\d+)?)"
+            match = re.search(pattern, sns_message)
+            if match:
+                alarm_amount = match.group(1)
+            
+            if COST_BUDGET_ALARM_TOTAL_ACTUAL_NAME in sns_subject:
+                is_match = True
+                auto_destroy = True
+                user_message = {
+                    "auto_destroy": auto_destroy,
+                    "manual_action_required": False,
+                    "status": "DESTRUCTION_INVOKED",
+                    "target": "AWS INFRASTRUCTURE",
+                    "invoking_sns": sns_subject,
+                    "alarm_amount": alarm_amount,
+                }
+            if COST_BUDGET_ALARM_TOTAL_FORECAST_NAME in sns_subject:
+                is_match = True
+                user_message = {
+                    "auto_destroy": auto_destroy,
+                    "manual_action_required": True,
+                    "status": "FORECAST_EXCEEDED",
+                    "target": "None",
+                    "invoking_sns": sns_subject,
+                    "alarm_amount": alarm_amount,
+                }
+            # Fallback in case the alarm is not found within sns_subject
+            if not is_match:
+                error_msg = "Cost Alarm Names not found within sns subject"
+                logger.error(error_msg)
+                user_message = {
+                    "status": "ERROR",
+                    "service": "Infrastructure_TerraformDestroyTrigger",
+                    "error_msg" : error_msg,
+                    "invoking_sns": sns_subject,
+                    "sns_message": sns_message,
+                }
+            # Notify Admin via SNS Topic invoking a Notification Sender Lambda Function
+            sns_resource = boto3.resource("sns")
+            sns_wrapper = SnsWrapper(sns_resource)
+            topic = sns_resource.Topic(SNS_TOPIC_ARN_NOTIFICATION_SENDER)
+            attributes = {"test": "string", "bintest": b"binary"}
+
+            if auto_destroy:
+                # Call Github Actions Pipeline to destroy non-persistent ephemeral aws infrastructure
+                logger.warn("INFRASTRUCTURE KILLSWITCH INVOKED", extra={"invoking": "TerraformModuleDestroyer Pipeline"})
+
+            sns_response = sns_wrapper.publish_message(topic, json.dumps(user_message), attributes, logger)
+            logger.debug("Sent SNS message.", extra={"sns_response": sns_response})
+
+            # Use Operator to merge these two dictionaries and return as result
+            result_message = json.dumps(user_message | {"sns_notification_response": sns_response})
+            if not is_match:
+                return {
+                    "statusCode": 422,
+                    "body": result_message
+                }
+            else:
+                return {
+                    "statusCode": 200,
+                    "body": result_message
+                }
         else:
-            print("No SNS records found in event")
+            logger.error("No SNS records found in event")
             return {
                 "statusCode": 400,
-                "body": json.dumps({"error": "Invalid event structure"})
+                "body": json.dumps({"error": "Invalid SNS event structure"})
             }
     except Exception as e:
-        print(f"Error processing teardown trigger: {str(e)}")
-        raise
+        logger.error("Unexpected error during TerraformDestroyTrigger", extra={"error": str(e)})
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"error": str(e)})
+        }
