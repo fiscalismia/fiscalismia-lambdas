@@ -103,7 +103,7 @@ if [ "${PROGRAMMING_LANG}" == "python" ]; then
   if [ -d "./python" ];
     then
       echo -e \"${BLUE_BOLD}################## LISTING LAYER UTILITY CODE ###############${NC}\"
-      ls -hlas ./python/ | grep ".py"
+      ls -hlas ./python/ | grep ".py"  || true
     else 
       echo -e \"${YELLOW}####### NO LAYER UTILITY CODE PRESENT ########${NC}\"
   fi
