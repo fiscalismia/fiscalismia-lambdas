@@ -115,17 +115,24 @@ def lambda_handler(event, context):
                     "authorization": f"Bearer {TERRAFORM_DESTROY_GITHUB_WEBHOOK}",
                     "content-type": "application/json"
                 }
-                gh_response = requests.post(url, json=payload, headers=headers)
-                gh_status = gh_response.get("status", None)
-                if gh_status != 204:
-                    error_msg = "Github Webhook Invocation status invalid."
-                    logger.error(error_msg)
+                response = requests.post(url, json=payload, headers=headers)
+                status = response.status_code
+                content = None
+                if status != 204:
+                    try:
+                        content = response.json()
+                    except ValueError:
+                        content = response.text
+                    error_msg = f"Github Webhook Invocation status invalid: {status}"
+                    logger.error(error_msg, extra={"github_response": content})
+                    sns_response = sns_wrapper.publish_message(topic, json.dumps({"error_msg": error_msg} | {"github_response": content} | user_message), attributes, logger)
+                    logger.debug("Sent SNS github error message.", extra={"sns_response": sns_response})
                     return {
                         "statusCode": 404,
-                        "body": json.dumps({"error": error_msg, "gh_status": gh_status})
+                        "body": json.dumps({"error": error_msg, "github_response": content})
                     }
-                logger.info("Invoked TerraformModuleDestroyer Pipeline via webhook.", extra={"github_response": gh_response, "actions_url" : "https://github.com/fiscalismia/fiscalismia-infrastructure/actions"})
-                user_message = json.dumps(user_message | {"gh_status": gh_status, "actions_url" : "https://github.com/fiscalismia/fiscalismia-infrastructure/actions"})
+                logger.info("Invoked TerraformModuleDestroyer Pipeline via webhook.", extra={"github_response": content, "actions_url" : "https://github.com/fiscalismia/fiscalismia-infrastructure/actions"})
+                user_message = user_message | {"gh_status": status, "actions_url" : "https://github.com/fiscalismia/fiscalismia-infrastructure/actions"}
 
             sns_response = sns_wrapper.publish_message(topic, json.dumps(user_message), attributes, logger)
             logger.debug("Sent SNS message.", extra={"sns_response": sns_response})
