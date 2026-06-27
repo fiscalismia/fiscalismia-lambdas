@@ -19,7 +19,7 @@ def lambda_handler(event, context):
     logger.debug("Function invoked", extra={"function_name": function_name, "request_id": request_id, "invoked_at": current_time })
 
     try:
-        # query SecureString from AWS Parameter Store
+        logger.debug("Querying SecureString Parameters from Parameter Store", extra={"params": "TELEGRAM_API_TOKEN, TELEGRAM_CHAT_ID"})
         TELEGRAM_API_TOKEN = parameters.get_parameter(
             "/notifications/telegram/FISCALISMIA_MSG_TELEGRAM_API_TOKEN",
             decrypt=True

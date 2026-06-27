@@ -1,11 +1,13 @@
 # s3://fiscalismia-infrastructure/lambdas/infrastructure/python/Infrastructure_TerraformDestroyTrigger.zip
 import json
+import requests
 import boto3
 import os
 import re
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from aws_lambda_powertools import Logger
+from aws_lambda_powertools.utilities import parameters
 from sns_utility import SnsWrapper
 
 # Read ENV Variables from Terraform
@@ -87,8 +89,43 @@ def lambda_handler(event, context):
             attributes = {"test": "string", "bintest": b"binary"}
 
             if auto_destroy:
+                logger.debug("Querying SecureString Parameters from Parameter Store", extra={"params": "TERRAFORM_DESTROY_GITHUB_WEBHOOK"})
+                TERRAFORM_DESTROY_GITHUB_WEBHOOK = parameters.get_parameter(
+                    "/github/webhooks/TERRAFORM_DESTROY_GITHUB_WEBHOOK",
+                    decrypt=True
+                )
+                if TERRAFORM_DESTROY_GITHUB_WEBHOOK is None:
+                    error_msg = "Github SecureString could not be extracted from parameter store."
+                    logger.error(error_msg)
+                    return {
+                        "statusCode": 400,
+                        "body": json.dumps({"error": error_msg})
+                    }
+                
                 # Call Github Actions Pipeline to destroy non-persistent ephemeral aws infrastructure
                 logger.warn("INFRASTRUCTURE KILLSWITCH INVOKED", extra={"invoking": "TerraformModuleDestroyer Pipeline"})
+
+                url = "https://api.github.com/repos/fiscalismia/fiscalismia-infrastructure/dispatches"
+                payload = {
+                    "event_type": "aws_infrastructure_destroyer",
+                    "client_payload": { "destroy_aws_resources": True }
+                }
+                headers = {
+                    "accept": "application/vnd.github+json",
+                    "authorization": f"Bearer {TERRAFORM_DESTROY_GITHUB_WEBHOOK}",
+                    "content-type": "application/json"
+                }
+                gh_response = requests.post(url, json=payload, headers=headers)
+                gh_status = gh_response.get("status", None)
+                if gh_status != 204:
+                    error_msg = "Github Webhook Invocation status invalid."
+                    logger.error(error_msg)
+                    return {
+                        "statusCode": 404,
+                        "body": json.dumps({"error": error_msg, "gh_status": gh_status})
+                    }
+                logger.info("Invoked TerraformModuleDestroyer Pipeline via webhook.", extra={"github_response": gh_response, "actions_url" : "https://github.com/fiscalismia/fiscalismia-infrastructure/actions"})
+                user_message = json.dumps(user_message | {"gh_status": gh_status, "actions_url" : "https://github.com/fiscalismia/fiscalismia-infrastructure/actions"})
 
             sns_response = sns_wrapper.publish_message(topic, json.dumps(user_message), attributes, logger)
             logger.debug("Sent SNS message.", extra={"sns_response": sns_response})
