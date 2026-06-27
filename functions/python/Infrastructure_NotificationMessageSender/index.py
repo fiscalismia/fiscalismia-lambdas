@@ -7,6 +7,37 @@ from datetime import datetime
 
 logger = Logger(service="Infrastructure_NotificationMessageSender")
 TELEGRAM_BOT_ENDPOINT_BASE_URL: str = "api.telegram.org/bot"
+
+def sns_message_parser(sns_message) -> str:
+    """
+    Parse SNS message and return the message content.
+    Formatted specifically for telegram api HTML parsing.
+    Default fallback is unmodified sns_message.
+    """
+    logger.debug("Parsing SNS message", extra={"sns_message": sns_message})
+    if isinstance(sns_message, str) and len(sns_message) > 0:
+        try:
+            parsed_delta = json.loads(sns_message)
+            preformatted_str = ""
+            for key, value in parsed_delta.items():
+                pad_len = 25
+                pad_char= " "
+                pad_str = ""
+                if len(key) < pad_len:
+                    pad_str = f"{pad_char * (pad_len - len(key))}"
+                preformatted_str += f"<code>{key}:{pad_str}{value}</code>\n"
+            if len(preformatted_str) > 0:
+                parsed_delta = preformatted_str
+            print(preformatted_str)
+        except json.JSONDecodeError as e:
+            logger.warn("JSON parsing failed.", extra={"sns_message": sns_message})
+            parsed_delta = sns_message
+    else:
+        # Early return of unmodified input
+        return sns_message
+    parsed_result = parsed_delta
+    return f"<b>ʕっ•ᴥ•ʔっ  ♡  ⊂ʕ•ᴥ•⊂ʔ</b>\n<pre>{parsed_result}</pre>"
+
 def lambda_handler(event, context):
     """
     Lambda function to send notification messages.
@@ -51,7 +82,7 @@ def lambda_handler(event, context):
             payload = {
                 "chat_id": TELEGRAM_CHAT_ID,
                 "parse_mode": "HTML",
-                "text": sns_message
+                "text": sns_message_parser(sns_message)
             }
             # Sending request payload to telegram api
             response = requests.post(url, json=payload, headers=headers)
